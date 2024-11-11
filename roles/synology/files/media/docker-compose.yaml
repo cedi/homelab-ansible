@@ -1,0 +1,26 @@
+version: "3.9"
+
+services:
+  nginx-proxy-manager:
+    image: "jc21/nginx-proxy-manager:latest"
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "81:81"
+      - "443:443"
+    volumes:
+      - /volume1/docker/media/nginx-proxy/data:/data
+      - /volume1/docker/media/nginx-proxy/letsencrypt:/etc/letsencrypt
+
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    container_name: jellyfin
+    restart: unless-stopped
+    network_mode: host
+    ports:
+      - "8096:8096" # HTTP Port
+      - "1900:1900" # service auto-discovery
+      - "7359:7359" # auto-discovery
+    volumes:
+      - /volume1/docker/media/jellyfin:/config
+      - /volume1/Media:/data/media

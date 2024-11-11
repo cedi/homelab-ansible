@@ -1,0 +1,25 @@
+- name: Ensure /etc/apt/keyrings exists
+  file:
+    path: "/etc/apt/keyrings"
+    state: directory
+    owner: root
+    group: root
+    mode: 0775
+
+- name: "Get additional APT Keys"
+  loop: "{{ base__additional_package_repositories }}"
+  ansible.builtin.get_url:
+    url: "{{ item.key.url }}"
+    dest: "/etc/apt/keyrings/{{ item.key.name }}"
+
+- name: Add additional repositories to source
+  loop: "{{ base__additional_package_repositories }}"
+  ansible.builtin.apt_repository:
+    repo: "{{ item.repo }}"
+    state: present
+
+- name: Install additional packages
+  loop: "{{ base__additional_package_repositories }}"
+  package:
+    name: "{{ item.install_package }}"
+    state: present

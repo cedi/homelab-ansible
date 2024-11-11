@@ -1,0 +1,34 @@
+---
+- name: Check if /boot/firmware/config.txt exists
+  ansible.builtin.stat:
+    path: /boot/firmware/config.txt
+  register: boot_firmware_config_txt
+
+- name: Control Fan to be less aggressive on Pi5
+  when:
+    - "raspberry_pi_version == 5"
+    - boot_firmware_config_txt.stat.exists
+  ansible.builtin.lineinfile:
+    path: /boot/firmware/config.txt
+    insertafter: "[all]"
+    line: "{{ config_item }}"
+    state: present
+  with_items:
+    - "dtparam=fan_temp0=65000"
+    - "dtparam=fan_temp1=70000"
+    - "dtparam=fan_temp2=75000"
+    - "dtparam=fan_temp3=80000"
+  loop_control:
+    loop_var: config_item
+  notify: Reboot Pi
+
+- name: Enable pciex1_gen=3 on Pi5
+  when:
+    - "raspberry_pi_version == 5"
+    - boot_firmware_config_txt.stat.exists
+  ansible.builtin.lineinfile:
+    path: /boot/firmware/config.txt
+    insertafter: "[all]"
+    line: "dtparam=pciex1_gen=3"
+    state: present
+  notify: Reboot Pi

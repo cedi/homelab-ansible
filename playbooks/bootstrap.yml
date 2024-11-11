@@ -1,0 +1,14 @@
+---
+- hosts: all
+  gather_facts: true
+  become: true
+  roles:
+    - role: base
+    - role: ansible-role-tailscale
+
+- hosts: raspberry_pis
+  gather_facts: true
+  become: true
+  roles:
+    - role: raspberrypi
+    - role: geerlingguy.node_exporter

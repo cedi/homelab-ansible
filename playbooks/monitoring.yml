@@ -1,0 +1,107 @@
+---
+- hosts: lyv
+  gather_facts: true
+  become: true
+  collections:
+    - grafana.grafana
+  roles:
+    - role: grafana.grafana.alloy
+      vars:
+        alloy_user_groups:
+          - "systemd-journal"
+          - "adm"
+          - "sudo"
+        env_file_vars:
+          CUSTOM_ARGS: "--server.http.listen-addr=0.0.0.0:12345"
+        alloy_config: |
+          loki.write "grafana_loki" {
+            endpoint {
+              url       = "https://loki-gateway.tailc18b.ts.net/loki/api/v1/push"
+              tenant_id = "homelab"
+              headers = {
+                "X-Scope-OrgID" = "homelab",
+              }
+            }
+          }
+
+          local.file_match "local_files" {
+            path_targets = [{"__path__" = "/var/log/*.log"}]
+            sync_period = "5s"
+          }
+
+          loki.source.file "log_scrape" {
+            targets       = local.file_match.local_files.targets
+            forward_to    = [loki.write.grafana_loki.receiver]
+            tail_from_end = true
+          }
+
+          loki.relabel "journal" {
+            forward_to = []
+
+            rule {
+              source_labels = ["__journal__systemd_unit"]
+              target_label  = "unit"
+            }
+          }
+
+
+          loki.source.journal "log_syslog" {
+            format_as_json = true
+            relabel_rules = loki.relabel.journal.rules
+            forward_to     = [loki.write.grafana_loki.receiver]
+          }
+
+          prometheus.remote_write "mimir" {
+            endpoint {
+              url = "https://mimir-nginx.tailc18b.ts.net/api/v1/push"
+              headers = {
+                "X-Scope-OrgID" = "homelab",
+              }
+            }
+          }
+
+          prometheus.scrape "node_exporter" {
+            job_name = "node_exporter"
+            targets = [
+              {"__address__" = "lyv:9100"},
+              {"__address__" = "nas:9100"},
+              {"__address__" = "clusterpi-leader:9100"},
+              {"__address__" = "clusterpi-worker1:9100"},
+              {"__address__" = "clusterpi-worker2:9100"},
+              {"__address__" = "clusterpi-worker3:9100"},
+              {"__address__" = "clusterpi-worker4:9100"},
+              {"__address__" = "lora:9100"},
+            ]
+            forward_to = [prometheus.remote_write.mimir.receiver]
+          }
+
+          prometheus.scrape "snmp_exporter" {
+            job_name = "snmp"
+            targets = [
+              {"__address__" = "192.168.0.64:9116"},
+            ]
+            forward_to   = [prometheus.remote_write.mimir.receiver]
+            metrics_path = "/snmp"
+            params       = {
+              "module"   = ["synology"],
+              "auth"     = ["snmpv3"],
+              "target"     = ["nas"],
+            }
+          }
+
+          prometheus.scrape "cadvisor" {
+            job_name = "cadvisor"
+            targets = [
+              {"__address__" = "192.168.0.64:8123"},
+            ]
+            forward_to   = [prometheus.remote_write.mimir.receiver]
+            metrics_path = "/metrics"
+          }
+
+          prometheus.exporter.self "self" {
+          }
+
+          prometheus.scrape "self" {
+            targets    = prometheus.exporter.self.self.targets
+            forward_to = [prometheus.remote_write.mimir.receiver]
+          }

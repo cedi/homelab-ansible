@@ -1,0 +1,24 @@
+---
+- name: Check if /boot/firmware/config.txt exists
+  ansible.builtin.stat:
+    path: /boot/firmware/config.txt
+  register: boot_firmware_config_txt
+
+- name: Control PoE HAT fan to be less aggressive on Pi4
+  when:
+    - "raspberry_pi_version == 4"
+    - boot_firmware_config_txt.stat.exists
+  ansible.builtin.lineinfile:
+    path: /boot/firmware/config.txt
+    insertafter: "[all]"
+    line: "{{ config_item }}"
+    state: present
+  with_items:
+    - "dtoverlay=rpi-poe-plus"
+    - "dtparam=poe_fan_temp0=65000"
+    - "dtparam=poe_fan_temp1=70000"
+    - "dtparam=poe_fan_temp2=75000"
+    - "dtparam=poe_fan_temp3=80000"
+  loop_control:
+    loop_var: config_item
+  notify: Reboot Pi

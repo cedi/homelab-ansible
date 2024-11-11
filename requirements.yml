@@ -1,0 +1,9 @@
+---
+collections:
+  - name: community.general
+  - name: ansible.posix
+  - name: grafana.grafana
+
+roles:
+  - name: geerlingguy.node_exporter
+  - name: artis3n.tailscale

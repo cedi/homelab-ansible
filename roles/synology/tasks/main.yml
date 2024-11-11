@@ -1,0 +1,5 @@
+---
+- name: Copy Docker-Projects
+  copy:
+    src: files/
+    dest: /volume1/docker
