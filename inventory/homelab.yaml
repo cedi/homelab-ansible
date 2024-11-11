@@ -1,0 +1,77 @@
+---
+all:
+  vars:
+    tailscale_authkey: !vault |
+      $ANSIBLE_VAULT;1.1;AES256
+      36646561383930656163396633616334643730653033363566306539353065376538633634353462
+      3564316132323431303532636534336635316430376532360a646335383437616236333039656536
+      32653137343265366635363636613733623263663435616463633636343965666563636165326237
+      6663356133323735650a363233633463383132653939323333666161306434646336373936613865
+      32363831623762303836653962383335323834643231656366343135306566616430386362326362
+      33323164663436393036373064396566366461343666343961303933306366643734336135613466
+      383534623538333737626439623065643163
+    tailscale_up_skip: false
+    tailscale_args: "--ssh"
+    tailscale_tags:
+      - homelab
+
+  children:
+    k3s_cluster:
+    standalone_pis:
+
+synology:
+  hosts:
+    nas:
+      ansible_host: nas
+      ansible_user: king
+      tailscale_tags:
+        - prod
+
+standalone_pis:
+  hosts:
+    lyv:
+      ansible_host: lyv
+      tailscale_tags:
+        - homelab
+        - jumphost
+    lora:
+      ansible_host: lora
+
+raspberry_pis:
+  vars:
+    ansible_user: pi
+    node_exporter_arch: arm64
+  children:
+    k3s_cluster:
+    standalone_pis:
+
+k3s_cluster:
+  vars:
+    extra_server_args: "--disable-network-policy --disable traefik"
+    extra_agent_args: ""
+    k3s_version: v1.31.1+k3s1
+    cluster_context: labk3s
+    kubeconfig: ~/.kube/configs/labk3s
+    api_endpoint: "{{ hostvars[groups['server'][0]]['ansible_host'] | default(groups['server'][0]) }}"
+    token: !vault |
+      $ANSIBLE_VAULT;1.1;AES256
+      36656164376163613637356330623533323062383639346231656132393732636434336232653265
+      3138313531386637306162376632663663346535333432360a333132646137343539656633636133
+      35306131356637383433663363396631323731383030633239666466636462373235663463353136
+      6133666463343461390a356535343336336132623365646531323763623435356530316235363063
+      64656538336237653838343534663939653333333562633364626236613764313332
+  children:
+    server:
+      hosts:
+        clusterpi-leader:
+          ansible_host: clusterpi-leader
+    agent:
+      hosts:
+        clusterpi-worker1:
+          ansible_host: clusterpi-worker1.local
+        clusterpi-worker2:
+          ansible_host: clusterpi-worker2.local
+        clusterpi-worker3:
+          ansible_host: clusterpi-worker3
+        clusterpi-worker4:
+          ansible_host: clusterpi-worker4
