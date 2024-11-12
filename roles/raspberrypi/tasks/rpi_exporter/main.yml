@@ -1,0 +1,67 @@
+---
+- name: Check current rpi_exporter version.
+  command: "{{ rpi_exporter_bin_path }} --version"
+  failed_when: false
+  changed_when: false
+  register: rpi_exporter_version_check
+
+- name: Configure latest version
+  include_tasks: config-version.yaml
+  when: >
+    rpi_exporter_version is match("latest")
+    or rpi_exporter_version is not defined
+
+- name: Download and unarchive rpi_exporter into temporary location.
+  unarchive:
+    src: "{{ rpi_exporter_download_url }}"
+    dest: /tmp
+    remote_src: true
+    mode: 0755
+  when: >
+    rpi_exporter_version_check.stdout is not defined
+    or rpi_exporter_version not in rpi_exporter_version_check.stdout
+  register: rpi_exporter_download_check
+
+- name: Move rpi_exporter binary into place.
+  copy:
+    src: "/tmp/rpi_exporter"
+    dest: "{{ rpi_exporter_bin_path }}"
+    mode: 0755
+    remote_src: true
+  notify: restart rpi_exporter
+  when: >
+    rpi_exporter_download_check is changed
+    or rpi_exporter_version_check.stdout | length == 0
+
+- name: Create rpi_exporter user.
+  user:
+    name: rpi_exporter
+    shell: /sbin/nologin
+    state: present
+    groups: video
+
+- name: Copy the rpi_exporter systemd unit file.
+  template:
+    src: rpi_exporter.service.j2
+    dest: /etc/systemd/system/rpi_exporter.service
+    mode: 0644
+  register: rpi_exporter_service
+
+- name: Reload systemd daemon if unit file is changed.
+  systemd:
+    daemon_reload: true
+  notify: restart rpi_exporter
+  when: rpi_exporter_service is changed
+
+- name: Ensure rpi_exporter is running and enabled at boot.
+  service:
+    name: rpi_exporter
+    state: "{{ rpi_exporter_state }}"
+    enabled: "{{ rpi_exporter_enabled }}"
+
+- name: Verify rpi_exporter is responding to requests.
+  uri:
+    url: "http://{% if rpi_exporter_host !='' %}{{ rpi_exporter_host }}{% else %}localhost{% endif %}:{{ rpi_exporter_port }}/"
+    return_content: true
+  register: metrics_output
+  failed_when: "'Metrics' not in metrics_output.content"

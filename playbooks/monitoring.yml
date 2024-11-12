@@ -3,7 +3,7 @@
   gather_facts: true
   become: true
   collections:
-    - grafana.grafana
+    - grafana.grafana:5.6.0
   roles:
     - role: grafana.grafana.alloy
       vars:
@@ -71,6 +71,21 @@
               {"__address__" = "clusterpi-worker3:9100"},
               {"__address__" = "clusterpi-worker4:9100"},
               {"__address__" = "lora:9100"},
+            ]
+            forward_to = [prometheus.remote_write.mimir.receiver]
+          }
+
+          prometheus.scrape "rpi_exporter" {
+            job_name = "rpi_exporter"
+            targets = [
+              {"__address__" = "lyv:9243"},
+              {"__address__" = "nas:9243"},
+              {"__address__" = "clusterpi-leader:9243"},
+              {"__address__" = "clusterpi-worker1:9243"},
+              {"__address__" = "clusterpi-worker2:9243"},
+              {"__address__" = "clusterpi-worker3:9243"},
+              {"__address__" = "clusterpi-worker4:9243"},
+              {"__address__" = "lora:9243"},
             ]
             forward_to = [prometheus.remote_write.mimir.receiver]
           }

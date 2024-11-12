@@ -1,6 +1,5 @@
-- hosts: clusterpi-worker3
+- hosts: raspberry_pis
   gather_facts: true
   become: true
   roles:
-    - role: base
     - role: raspberrypi

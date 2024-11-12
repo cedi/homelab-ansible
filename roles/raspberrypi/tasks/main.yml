@@ -68,3 +68,8 @@
     - "prereq/default.yml"
   when:
     - raspberry_pi|default(false)
+
+- name: Install the rpi_exporter
+  ansible.builtin.include_tasks: "rpi_exporter/main.yml"
+  when:
+    - raspberry_pi|default(false)

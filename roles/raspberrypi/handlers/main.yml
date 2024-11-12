@@ -10,3 +10,8 @@
     chdir: /boot
   notify: Reboot Pi
   changed_when: true
+
+- name: restart rpi_exporter
+  service:
+    name: rpi_exporter
+    state: restarted
