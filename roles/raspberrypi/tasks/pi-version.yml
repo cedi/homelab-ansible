@@ -1,0 +1,54 @@
+---
+- name: Test for raspberry pi /proc/cpuinfo
+  ansible.builtin.command: grep -E "Raspberry Pi|BCM2708|BCM2709|BCM2835|BCM2836" /proc/cpuinfo
+  register: grep_cpuinfo_raspberrypi
+  failed_when: false
+  changed_when: false
+
+- name: Test for raspberry pi /proc/device-tree/model
+  ansible.builtin.command: grep -E "Raspberry Pi" /proc/device-tree/model
+  register: grep_device_tree_model_raspberrypi
+  failed_when: false
+  changed_when: false
+
+- name: Set raspberry_pi fact to true
+  ansible.builtin.set_fact:
+    raspberry_pi: true
+  when: grep_cpuinfo_raspberrypi.rc == 0 or grep_device_tree_model_raspberrypi.rc == 0
+
+- name: Register regex for getting the Pi Model Info
+  set_fact:
+    pi_model_line_regex: '^(Model\s+:\s)(Raspberry Pi|BCM2708|BCM2709|BCM2835|BCM2836)\s*(.*)(\sRev\s\d.\d.*)$'
+
+- name: Register regex for getting the Pi Model Info
+  set_fact:
+    pi_model_regex: '^(\d)\sModel\s(.*)$'
+
+- name: Register regex for getting the Pi Model Info (ComputeModule)
+  set_fact:
+    pi_model_regex_cm: '^.*\s(\d)$'
+
+- name: Gather raspberry_pi model info
+  set_fact:
+    pi_model_line: "{{ grep_cpuinfo_raspberrypi.stdout | regex_search(pi_model_line_regex, '\\3') | first }}"
+
+- name: Gather raspberry_pi_version fact
+  block:
+    - name: Set raspberry_pi_version fact
+      set_fact:
+        raspberry_pi_version: "{{ pi_model_line | regex_search(pi_model_regex, '\\1') | first }}"
+
+    - name: Set raspberry_pi_model fact
+      set_fact:
+        raspberry_pi_model: "{{ pi_model_line | regex_search(pi_model_regex, '\\2') | first }}"
+  when: '"Compute Model" not in pi_model_line'
+
+- name: Gather raspberry_pi_version fact (ComputeModule)
+  block:
+    - name: Set raspberry_pi_version fact
+      set_fact:
+        raspberry_pi_version: "{{ pi_model_line | regex_search(pi_model_regex_cm, '\\2') | first }}"
+    - name: Set raspberry_pi_model fact
+      set_fact:
+        raspberry_pi_model: "ComputeModule"
+  when: '"Compute Model" in pi_model_line'

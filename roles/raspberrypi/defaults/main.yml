@@ -1,24 +1,13 @@
-# Use the latest rpi_exporter release
-rpi_exporter_version: "latest"
+rpi_fan_trip_points: {}
+#  poe_fan_temp0: 65000
+#  poe_fan_temp1: 70000
+#  poe_fan_temp2: 75000
+#  poe_fan_temp3: 80000
 
-# Alternatively, set a specific version
-# See available releases: https://github.com/cedi/rpi_exporter/releases/
-# rpi_exporter_version: '1.0.6'
+rpi_dtoverlays: []
+#  rpi-poe-plus
 
-rpi_exporter_arch: "arm64"
-rpi_exporter_download_url: https://github.com/cedi/rpi_exporter/releases/download/v{{ rpi_exporter_version }}/rpi_exporter_{{ rpi_exporter_version }}_linux_{{ rpi_exporter_arch }}.tar.gz
-#                                                                                                             rpi_exporter_             1.0.6        _linux_                   arm64.tar.gz
+rpi_pciex1_gen: ""
+# rpi_pciex1_gen: 3
 
-rpi_exporter_bin_path: /usr/local/bin/rpi_exporter
-
-# Set rpi_exporter_host to localhost if you wish to expose rpi_exporter on localhost only.
-rpi_exporter_host: ""
-rpi_exporter_port: 9243
-rpi_exporter_options: ""
-
-rpi_exporter_state: started
-rpi_exporter_enabled: true
-rpi_exporter_restart: on-failure
-
-# Set to /opt/vc/bin/vcgencmd for 32bit
-rpi_exporter_vcgencmd_path: "/usr/bin/vcgencmd"
+rpi_enable_cgroups: true

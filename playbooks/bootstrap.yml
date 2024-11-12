@@ -12,3 +12,4 @@
   roles:
     - role: raspberrypi
     - role: geerlingguy.node_exporter
+    - role: rpi_exporter

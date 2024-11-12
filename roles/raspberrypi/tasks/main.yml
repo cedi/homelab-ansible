@@ -1,54 +1,9 @@
 ---
-- name: Test for raspberry pi /proc/cpuinfo
-  ansible.builtin.command: grep -E "Raspberry Pi|BCM2708|BCM2709|BCM2835|BCM2836" /proc/cpuinfo
-  register: grep_cpuinfo_raspberrypi
-  failed_when: false
-  changed_when: false
+- name: Detect Raspberry Pi Version and Model
+  ansible.builtin.include_tasks: "pi-version.yml"
 
-- name: Test for raspberry pi /proc/device-tree/model
-  ansible.builtin.command: grep -E "Raspberry Pi" /proc/device-tree/model
-  register: grep_device_tree_model_raspberrypi
-  failed_when: false
-  changed_when: false
-
-- name: Set raspberry_pi fact to true
-  ansible.builtin.set_fact:
-    raspberry_pi: true
-  when: grep_cpuinfo_raspberrypi.rc == 0 or grep_device_tree_model_raspberrypi.rc == 0
-
-- name: Set raspberry_pi_version fact to 4
-  ansible.builtin.set_fact:
-    raspberry_pi_version: 4
-  when: '"Raspberry Pi 4" in grep_cpuinfo_raspberrypi.stdout'
-
-- name: Set raspberry_pi_version fact to 5
-  ansible.builtin.set_fact:
-    raspberry_pi_version: 5
-  when: '"Raspberry Pi 5" in grep_cpuinfo_raspberrypi.stdout'
-
-- name: Set detected_distribution to Raspbian
-  ansible.builtin.set_fact:
-    detected_distribution: Raspbian
-  when: >
-    raspberry_pi|default(false) and
-    ( ansible_facts.lsb.id|default("") == "Raspbian" or
-      ansible_facts.lsb.description|default("") is match("[Rr]aspbian.*") )
-
-- name: Set detected_distribution to Debian
-  ansible.builtin.set_fact:
-    detected_distribution: Debian
-  when: >
-    raspberry_pi|default(false) and
-    ( ansible_facts.lsb.id|default("") == "Debian" or
-      ansible_facts.lsb.description|default("") is match("Debian") )
-
-- name: Set detected_distribution to ArchLinux (ARM64)
-  ansible.builtin.set_fact:
-    detected_distribution: Archlinux
-  when:
-    - ansible_facts.architecture is search("aarch64")
-    - raspberry_pi|default(false)
-    - ansible_facts.os_family is match("Archlinux")
+- name: Detect Raspberry Pi OS
+  ansible.builtin.include_tasks: "os-detection.yml"
 
 - name: Configure RaspberryPi Firmware
   ansible.builtin.include_tasks: "firmware-config.yml"
@@ -66,10 +21,5 @@
     - "prereq/{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yml"
     - "prereq/{{ ansible_distribution }}.yml"
     - "prereq/default.yml"
-  when:
-    - raspberry_pi|default(false)
-
-- name: Install the rpi_exporter
-  ansible.builtin.include_tasks: "rpi_exporter/main.yml"
   when:
     - raspberry_pi|default(false)

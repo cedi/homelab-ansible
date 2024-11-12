@@ -1,0 +1,5 @@
+---
+- name: restart rpi_exporter
+  service:
+    name: rpi_exporter
+    state: restarted

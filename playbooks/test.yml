@@ -1,5 +1,5 @@
-- hosts: raspberry_pis
+- hosts: clusterpi-worker1
   gather_facts: true
   become: true
   roles:
-    - role: raspberrypi
+    - role: rpi_exporter

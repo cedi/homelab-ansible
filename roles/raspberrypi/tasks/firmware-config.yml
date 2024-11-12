@@ -4,7 +4,13 @@
     path: /boot/firmware/cmdline.txt
   register: boot_firmware_cmdline_txt
 
+- name: Check if /boot/firmware/config.txt exists
+  ansible.builtin.stat:
+    path: /boot/firmware/config.txt
+  register: boot_firmware_config_txt
+
 - name: Enable cgroup via boot commandline if not already enabled
+  when: rpi_enable_cgroups|default(false)
   ansible.builtin.replace:
     path: "{{ (boot_firmware_cmdline_txt.stat.exists) | ternary('/boot/firmware/cmdline.txt', '/boot/cmdline.txt') }}"
     regexp: '^([\w](?!.*\b{{ cgroup_item }}\b).*)$'
@@ -17,10 +23,42 @@
     loop_var: cgroup_item
   notify: Reboot Pi
 
-- name: Set Pi model specific firmware parameter
-  ansible.builtin.include_tasks: "{{ item }}"
-  with_first_found:
-    - "firmware/raspberry_pi_{{ raspberry_pi_version }}.yml"
-    - "prereq/default.yml"
+- name: Load additional dtoverlays
   when:
-    - raspberry_pi|default(false)
+    - boot_firmware_config_txt.stat.exists
+    - rpi_dtoverlays is defined and (rpi_dtoverlays | length>0)
+  ansible.builtin.lineinfile:
+    path: /boot/firmware/config.txt
+    insertafter: "[all]"
+    line: "dtoverlay={{ overlay }}"
+    state: present
+  loop: "{{ rpi_dtoverlays }}"
+  loop_control:
+    loop_var: overlay
+  notify: Reboot Pi
+
+- name: Control Fan to be less aggressive
+  when:
+    - boot_firmware_config_txt.stat.exists
+    - rpi_fan_trip_points is defined and (rpi_fan_trip_points | dict2items | length>0)
+  ansible.builtin.lineinfile:
+    path: /boot/firmware/config.txt
+    insertafter: "[all]"
+    line: "dtparam={{ trip_point.key }}={{ trip_point.value }}"
+    state: present
+  loop: "{{ rpi_fan_trip_points | dict2items }}"
+  loop_control:
+    loop_var: trip_point
+  notify: Reboot Pi
+
+- name: Set PCIx1 Gen (Only Pi Version >= 5 or CM 4)
+  when:
+    - boot_firmware_config_txt.stat.exists
+    - rpi_pciex1_gen is defined and (rpi_pciex1_gen | length>0)
+    - (raspberry_pi_version | int) >= 5 or (raspberry_pi_version | int >= 4 and raspberry_pi_model == "ComputeModule")
+  ansible.builtin.lineinfile:
+    path: /boot/firmware/config.txt
+    insertafter: "[all]"
+    line: "dtparam=pciex1_gen={{ rpi_pciex1_gen }}"
+    state: present
+  notify: Reboot Pi
