@@ -38,3 +38,13 @@ base__additional_package_repositories:
       name: kubernetes.key
     repo: deb [signed-by=/etc/apt/keyrings/kubernetes.key] https://pkgs.k8s.io/core:/stable:/v1.31/deb/ /
     install_package: kubectl
+  - key:
+      url: https://download.docker.com/linux/debian/gpg
+      name: docker.asc
+    repo: deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable
+    install_package:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
