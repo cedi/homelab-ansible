@@ -18,7 +18,7 @@
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
 
-	// "postCreateCommand": "uname -a",
+	"postCreateCommand": "sudo tailscale up --auth-key=$TS_AUTH_KEY"
 
 	// Configure tool-specific properties.
 	// "customizations": {},

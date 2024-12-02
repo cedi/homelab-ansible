@@ -1,0 +1,8 @@
+{
+    "recommendations": [
+        "GitHub.codespaces",
+        "GitHub.github-vscode-theme",
+        "GitHub.vscode-pull-request-github",
+        "redhat.ansible", 
+    ]
+}
