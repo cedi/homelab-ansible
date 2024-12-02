@@ -54,7 +54,7 @@
 - name: Set PCIx1 Gen (Only Pi Version >= 5 or CM 4)
   when:
     - boot_firmware_config_txt.stat.exists
-    - rpi_pciex1_gen is defined and (rpi_pciex1_gen | length>0)
+    - rpi_pciex1_gen is defined
     - (raspberry_pi_version | int) >= 5 or (raspberry_pi_version | int >= 4 and raspberry_pi_model == "ComputeModule")
   ansible.builtin.lineinfile:
     path: /boot/firmware/config.txt
