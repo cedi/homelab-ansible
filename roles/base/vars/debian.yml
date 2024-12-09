@@ -26,6 +26,7 @@ base__system_packages:
   - lldpad
   - neofetch
   - fzf
+  - unzip
 
 base__additional_package_repositories:
   - key:

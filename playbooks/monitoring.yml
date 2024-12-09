@@ -71,6 +71,7 @@
               {"__address__" = "clusterpi-worker3:9100"},
               {"__address__" = "clusterpi-worker4:9100"},
               {"__address__" = "lora:9100"},
+              {"__address__" = "lyn:9100"},
             ]
             forward_to = [prometheus.remote_write.mimir.receiver]
           }

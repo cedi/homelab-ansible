@@ -4,7 +4,7 @@
   become: true
   roles:
     - role: base
-    - role: ansible-role-tailscale
+    - role: artis3n.tailscale
 
 - hosts: raspberry_pis
   gather_facts: true
