@@ -19,6 +19,7 @@ all:
   children:
     k3s_cluster:
     standalone_pis:
+    lyn:
 
 prod:
   hosts:
@@ -32,6 +33,7 @@ prod:
       ansible_user: cedi
       tailscale_tags:
         - prod
+        - monitoring
 
 standalone_pis:
   hosts:

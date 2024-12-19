@@ -1,9 +1,9 @@
 ---
-- hosts: lyv
+- hosts: lyn
   gather_facts: true
   become: true
   collections:
-    - grafana.grafana:5.6.0
+    - grafana.grafana:5.7.0
   roles:
     - role: grafana.grafana.alloy
       vars:
@@ -11,7 +11,7 @@
           - "systemd-journal"
           - "adm"
           - "sudo"
-        env_file_vars:
+        alloy_env_file_vars:
           CUSTOM_ARGS: "--server.http.listen-addr=0.0.0.0:12345"
         alloy_config: |
           loki.write "grafana_loki" {
