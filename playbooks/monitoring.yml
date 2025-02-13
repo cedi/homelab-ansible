@@ -11,6 +11,9 @@
           - "systemd-journal"
           - "adm"
           - "sudo"
+        alloy_systemd_override: |
+          [Service]
+          User=root
         alloy_env_file_vars:
           CUSTOM_ARGS: "--server.http.listen-addr=0.0.0.0:12345"
         alloy_config: |
@@ -120,4 +123,24 @@
           prometheus.scrape "self" {
             targets    = prometheus.exporter.self.self.targets
             forward_to = [prometheus.remote_write.mimir.receiver]
+          }
+
+          otelcol.exporter.otlp "tempo" {
+            client {
+              endpoint = "tempo-distributor.tailc18b.ts.net/otlp-http"
+            }
+          }
+
+          otelcol.receiver.otlp "default" {
+            grpc {
+              endpoint = "0.0.0.0:4317"
+            }
+            http {
+              endpoint = "0.0.0.0:4318"
+            }
+            output {
+              metrics = [otelcol.exporter.otlp.tempo.input]
+              logs    = [otelcol.exporter.otlp.tempo.input]
+              traces  = [otelcol.exporter.otlp.tempo.input]
+            }
           }
