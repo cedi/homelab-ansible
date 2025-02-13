@@ -1,0 +1,33 @@
+---
+- name: install tsidp
+  become: false
+  ansible.builtin.shell: "go install tailscale.com/cmd/tsidp@latest"
+
+- name: Copy the tsidp env-var file.
+  become: true
+  template:
+    src: tsidp.env.j2
+    dest: /etc/default/tsidp
+    mode: 0644
+
+- name: Copy the tsidp systemd unit file.
+  become: true
+  template:
+    src: tsidp.service.j2
+    dest: /etc/systemd/system/tsidp.service
+    mode: 0644
+  register: tsidp
+
+- name: Reload systemd daemon if unit file is changed.
+  become: true
+  systemd:
+    daemon_reload: true
+  notify: restart tsidp
+  when: tsidp is changed
+
+- name: Ensure tsidp is running and enabled at boot.
+  become: true
+  service:
+    name: tsidp
+    state: "started"
+    enabled: true

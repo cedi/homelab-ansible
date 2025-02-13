@@ -1,0 +1,14 @@
+[Unit]
+Description=Tailscale (OIDC) IDP
+
+[Service]
+TimeoutStartSec=0
+User=root
+EnvironmentFile=/etc/default/tsidp
+ExecStart=/home/cedi/go/bin/tsidp
+Restart=on-failure
+TimeoutStopSec=20s
+SendSIGKILL=no
+
+[Install]
+WantedBy=multi-user.target

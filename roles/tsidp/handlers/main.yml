@@ -1,0 +1,5 @@
+---
+- name: restart tsidp
+  service:
+    name: tsidp
+    state: restarted

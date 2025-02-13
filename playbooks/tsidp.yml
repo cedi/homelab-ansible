@@ -1,0 +1,4 @@
+---
+- hosts: lyn
+  roles:
+    - role: tsidp
