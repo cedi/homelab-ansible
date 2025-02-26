@@ -1,0 +1,6 @@
+---
+- hosts: hole
+  gather_facts: true
+  become: true
+  roles:
+    - role: base

@@ -5,6 +5,7 @@
   collections:
     - grafana.grafana:5.7.0
   roles:
+    - role: geerlingguy.node_exporter
     - role: grafana.grafana.alloy
       vars:
         alloy_user_groups:
@@ -19,7 +20,7 @@
         alloy_config: |
           loki.write "grafana_loki" {
             endpoint {
-              url       = "https://loki-gateway.tailc18b.ts.net/loki/api/v1/push"
+              url       = "https://loki-gateway.sphinx-map.ts.net/loki/api/v1/push"
               tenant_id = "homelab"
               headers = {
                 "X-Scope-OrgID" = "homelab",
@@ -34,8 +35,18 @@
 
           loki.source.file "log_scrape" {
             targets       = local.file_match.local_files.targets
-            forward_to    = [loki.write.grafana_loki.receiver]
+            forward_to    = [loki.process.log_scrape.receiver]
             tail_from_end = true
+          }
+
+          loki.process "log_scrape" {
+            forward_to = [loki.write.grafana_loki.receiver]
+
+            stage.static_labels {
+              values = {
+                hostname = "lyn",
+              }
+            }
           }
 
           loki.relabel "journal" {
@@ -44,6 +55,11 @@
             rule {
               source_labels = ["__journal__systemd_unit"]
               target_label  = "unit"
+            }
+
+            rule {
+              source_labels = ["__journal__hostname"]
+              target_label  = "hostname"
             }
           }
 
@@ -56,7 +72,7 @@
 
           prometheus.remote_write "mimir" {
             endpoint {
-              url = "https://mimir-nginx.tailc18b.ts.net/api/v1/push"
+              url = "https://mimir-nginx.sphinx-map.ts.net/api/v1/push"
               headers = {
                 "X-Scope-OrgID" = "homelab",
               }
@@ -127,7 +143,7 @@
 
           otelcol.exporter.otlp "tempo" {
             client {
-              endpoint = "tempo-distributor.tailc18b.ts.net/otlp-http"
+              endpoint = "tempo-distributor.sphinx-map.ts.net/otlp-http"
             }
           }
 

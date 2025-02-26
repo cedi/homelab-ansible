@@ -1,5 +1,8 @@
 ---
 - import_playbook: bootstrap.yml
 - import_playbook: k3s-install.yml
+- import_playbook: metrics-collector.yml
 - import_playbook: monitoring.yml
+- import_playbook: monitoring-jitsi.yml
 - import_playbook: nas.yml
+- import_playbook: tsidp.yml

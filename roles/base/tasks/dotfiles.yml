@@ -2,7 +2,7 @@
 - name: Clone dotfiles
   git:
     repo: https://github.com/cedi/dotfiles.git
-    dest: /home/{{ ansible_user }}/.dotfiles
+    dest: $HOME/.dotfiles
     clone: true
     update: true
     recursive: true
@@ -10,7 +10,7 @@
 - name: Install dotfiles using stow
   command: "stow ."
   args:
-    chdir: /home/{{ ansible_user }}/.dotfiles
+    chdir: $HOME/.dotfiles
 
 - name: change default shell to zsh
   become: true

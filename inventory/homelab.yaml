@@ -13,27 +13,42 @@ all:
     tailscale_up_skip: false
     insecurely_log_authkey: true
     tailscale_args: "--ssh"
-    tailscale_tags:
-      - homelab
 
   children:
     k3s_cluster:
     standalone_pis:
+    jitsi:
+  hosts:
     lyn:
 
+jitsi:
+  hosts:
+    meet:
+      ansible_host: meet
+      ansible_user: root
+      tailscale_tags:
+        - core-services
+        - o11y-agent
 prod:
   hosts:
+    hole:
+      ansible_host: hole
+      ansible_user: root
+      tailscale_tags:
+        - core-infra
+        - core-services
     synology:
       ansible_host: nas
       ansible_user: king
       tailscale_tags:
-        - prod
+        - core-infra
+        - core-services
     lyn:
       ansible_host: lyn
       ansible_user: cedi
       tailscale_tags:
-        - prod
-        - monitoring
+        - core-infra
+        - o11y-collector
 
 standalone_pis:
   hosts:
@@ -43,7 +58,9 @@ standalone_pis:
         - homelab
         - jumphost
     lora:
-      ansible_host: lora
+      ansible_host: lora.local
+      tailscale_tags:
+        - homelab
 
 raspberry_pis:
   vars:
@@ -89,6 +106,8 @@ k3s_cluster:
     cluster_context: labk3s
     kubeconfig: ~/.kube/configs/labk3s
     api_endpoint: "{{ hostvars[groups['server'][0]]['ansible_host'] | default(groups['server'][0]) }}"
+    tailscale_tags:
+      - homelab
     token: !vault |
       $ANSIBLE_VAULT;1.1;AES256
       36656164376163613637356330623533323062383639346231656132393732636434336232653265

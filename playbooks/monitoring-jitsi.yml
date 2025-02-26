@@ -1,0 +1,114 @@
+---
+- hosts: jitsi
+  gather_facts: true
+  become: true
+  collections:
+    - grafana.grafana:5.7.0
+  roles:
+    - role: geerlingguy.node_exporter
+    - role: grafana.grafana.alloy
+      vars:
+        alloy_user_groups:
+          - "systemd-journal"
+          - "adm"
+          - "sudo"
+        alloy_systemd_override:
+          alloy_systemd_override: |
+            [Service]
+            User=root
+        alloy_config: |
+          loki.write "grafana_loki" {
+            endpoint {
+              url       = "https://loki-gateway.sphinx-map.ts.net/loki/api/v1/push"
+              tenant_id = "cedi-dev"
+            }
+
+            external_labels = {
+              hostname = "meet.realschule-rottweil.de",
+            }
+          }
+
+          local.file_match "local_files" {
+            path_targets = [
+              {"__path__" = "/var/log/*.log"},
+              {"__path__" = "/var/log/jitsi/*.log"},
+              {"__path__" = "/var/log/prosody/*.log"},
+              {"__path__" = "/var/log/prosody/*.err"},
+            ]
+            sync_period = "5s"
+          }
+
+          loki.source.file "log_scrape" {
+            targets       = local.file_match.local_files.targets
+            forward_to    = [loki.process.log_scrape.receiver]
+            tail_from_end = true
+          }
+
+          loki.process "log_scrape" {
+            forward_to = [loki.write.grafana_loki.receiver]
+
+            stage.static_labels {
+              values = {
+                hostname = "meet",
+              }
+            }
+          }
+
+          loki.relabel "journal" {
+            forward_to = []
+
+            rule {
+              source_labels = ["__journal__systemd_unit"]
+              target_label  = "unit"
+            }
+
+            rule {
+              source_labels = ["__journal__hostname"]
+              target_label  = "hostname"
+            }
+          }
+
+          loki.source.journal "log_syslog" {
+            format_as_json = true
+            relabel_rules = loki.relabel.journal.rules
+            forward_to     = [loki.write.grafana_loki.receiver]
+          }
+
+          prometheus.remote_write "mimir" {
+            endpoint {
+              url = "https://mimir-nginx.sphinx-map.ts.net/api/v1/push"
+              headers = {
+                "X-Scope-OrgID" = "cedi-dev",
+              }
+            }
+          }
+
+          prometheus.scrape "node_exporter" {
+            job_name = "node_exporter"
+            targets = [
+              {"__address__" = "localhost:9100"},
+            ]
+            forward_to = [prometheus.remote_write.mimir.receiver]
+          }
+
+          prometheus.scrape "jitsi_exporter" {
+            job_name = "jitsi_exporter"
+            targets = [
+              {"__address__" = "localhost:8080"},
+            ]
+            forward_to = [prometheus.remote_write.mimir.receiver]
+          }
+
+          prometheus.exporter.self "self" {
+          }
+
+          prometheus.scrape "self" {
+            targets    = prometheus.exporter.self.self.targets
+            forward_to = [prometheus.remote_write.mimir.receiver]
+          }
+
+          otelcol.exporter.otlp "tempo" {
+            client {
+              endpoint = "tempo-distributor.sphinx-map.ts.net/otlp-http"
+            }
+          }
