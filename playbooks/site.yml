@@ -6,3 +6,4 @@
 - import_playbook: monitoring-jitsi.yml
 - import_playbook: nas.yml
 - import_playbook: tsidp.yml
+- import_playbook: ptp.yml

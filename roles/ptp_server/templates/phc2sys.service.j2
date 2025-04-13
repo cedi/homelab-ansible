@@ -1,0 +1,13 @@
+[Unit]
+Description=Synchronize system clock or PTP hardware clock (PHC)
+Documentation=man:phc2sys
+Requires=ptp4l@{{ ptp_serv_eth_port }}.service
+After=ptp4l@{{ ptp_serv_eth_port }}.service
+Before=time-sync.target
+
+[Service]
+Type=simple
+ExecStart=/usr/sbin/phc2sys -w -c {{ ptp_serv_eth_port }} -s CLOCK_REALTIME
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,9 @@
+# serve time to the network
+allow
+
+# refclock from gpsd
+refclock SOCK /run/chrony.ttyAMA0.sock refid GPS precision 1e-1 offset 0.9999 delay 0.2
+refclock SOCK /run/chrony.pps0.sock refid PPS precision 1e-7
+
+# sync the real-time clock
+rtcsync

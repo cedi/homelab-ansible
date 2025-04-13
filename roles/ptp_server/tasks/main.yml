@@ -1,0 +1,96 @@
+---
+- name: Install time-server packages
+  package:
+    name:
+      - ntp
+      - pps-tools
+      - gpsd
+      - gpsd-clients
+      - chrony
+      - linuxptp
+    state: present
+
+- name: Copy the gpsd config file
+  template:
+    src: gpsd.j2
+    dest: /etc/default/gpsd
+    mode: 0644
+
+- name: Copy the chrony config file
+  template:
+    src: chrony.conf.j2
+    dest: /etc/chrony/chrony.conf
+    mode: 0644
+
+- name: Copy the ptp4l config file
+  template:
+    src: ptp4l.conf.j2
+    dest: /etc/linuxptp/ptp4l.conf
+    mode: 0644
+
+- name: Copy the phc2sys service file
+  template:
+    src: phc2sys.service.j2
+    dest: /lib/systemd/system/phc2sys-{{ ptp_serv_eth_port }}.service
+    mode: 0644
+
+- name: Copy the ntp config file
+  template:
+    src: ntp.conf.j2
+    dest: /etc/ntpsec/ntp.conf
+    mode: 0644
+
+- name: systemctl daemon reload
+  service:
+    daemon_reload: "true"
+
+- name: Ensure chrony is running and enabled at boot.
+  service:
+    name: chrony
+    state: "restarted"
+    enabled: "true"
+
+- name: Ensure chrony is running and enabled at boot.
+  service:
+    name: gpsd
+    state: "restarted"
+    enabled: "true"
+
+- name: Ensure ptp4l is running and enabled at boot.
+  service:
+    name: "ptp4l@{{ ptp_serv_eth_port }}"
+    state: started
+    enabled: true
+
+- name: Ensure phc2sys is running and enabled at boot.
+  service:
+    name: "phc2sys-{{ ptp_serv_eth_port }}.service"
+    state: started
+    enabled: true
+
+- name: Remove ntp options from DHCP
+  ansible.builtin.replace:
+    path: "/etc/dhcp/dhclient.conf"
+    regexp: "{{ option }}"
+    replace: ""
+  with_items:
+    - "dhcp6.sntp-servers,"
+    - ", ntp-servers"
+  loop_control:
+    loop_var: option
+
+- name: Delete dhcp ntp config
+  ansible.builtin.file:
+    state: absent
+    path: "{{ file }}"
+  with_items:
+    - /etc/dhcp/dhclient-exit-hooks.d/ntp
+    - /lib/dhcpcd/dhcpcd-hooks/50-ntp.conf
+  loop_control:
+    loop_var: file
+
+- name: Ensure ntp is running and enabled at boot.
+  service:
+    name: ntp
+    state: "restarted"
+    enabled: true

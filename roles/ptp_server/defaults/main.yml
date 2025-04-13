@@ -1,0 +1,6 @@
+---
+ptp_serv_gps_device: "/dev/ttyAMA0"
+ptp_serv_pps_device: "/dev/pps0"
+ptp_serv_gpsd_options: "-n"
+ptp_serv_gpsd_usbauto: "false"
+ptp_serv_eth_port: "eth0"
