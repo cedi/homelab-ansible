@@ -1,5 +1,5 @@
 ---
-- hosts: lyn
+- hosts: nuc
   gather_facts: true
   become: true
   collections:
@@ -22,9 +22,6 @@
             endpoint {
               url       = "https://loki-gateway.sphinx-map.ts.net/loki/api/v1/push"
               tenant_id = "homelab"
-              headers = {
-                "X-Scope-OrgID" = "homelab",
-              }
             }
           }
 
@@ -44,7 +41,7 @@
 
             stage.static_labels {
               values = {
-                hostname = "lyn",
+                hostname = "nuc",
               }
             }
           }
@@ -82,15 +79,22 @@
           prometheus.scrape "node_exporter" {
             job_name = "node_exporter"
             targets = [
-              {"__address__" = "lyv:9100"},
+              {"__address__" = "jumphost:9100"},
               {"__address__" = "nas:9100"},
               {"__address__" = "clusterpi-leader:9100"},
               {"__address__" = "clusterpi-worker1:9100"},
               {"__address__" = "clusterpi-worker2:9100"},
               {"__address__" = "clusterpi-worker3:9100"},
               {"__address__" = "clusterpi-worker4:9100"},
-              {"__address__" = "lora:9100"},
-              {"__address__" = "lyn:9100"},
+              {"__address__" = "storagepi-ceph1:9100"},
+              {"__address__" = "storagepi-ceph2:9100"},
+              {"__address__" = "storagepi-ceph3:9100"},
+              {"__address__" = "blade-pi1:9100"},
+              {"__address__" = "blade-pi2:9100"},
+              {"__address__" = "blade-pi3:9100"},
+              {"__address__" = "blade-pi4:9100"},
+              {"__address__" = "timepi:9100"},
+              {"__address__" = "nuc:9100"},
             ]
             forward_to = [prometheus.remote_write.mimir.receiver]
           }
@@ -98,14 +102,32 @@
           prometheus.scrape "rpi_exporter" {
             job_name = "rpi_exporter"
             targets = [
-              {"__address__" = "lyv:9243"},
+              {"__address__" = "jumphost:9243"},
               {"__address__" = "nas:9243"},
               {"__address__" = "clusterpi-leader:9243"},
               {"__address__" = "clusterpi-worker1:9243"},
               {"__address__" = "clusterpi-worker2:9243"},
               {"__address__" = "clusterpi-worker3:9243"},
               {"__address__" = "clusterpi-worker4:9243"},
-              {"__address__" = "lora:9243"},
+              {"__address__" = "storagepi-ceph1:9243"},
+              {"__address__" = "storagepi-ceph2:9243"},
+              {"__address__" = "storagepi-ceph3:9243"},
+              {"__address__" = "blade-pi1:9243"},
+              {"__address__" = "blade-pi2:9243"},
+              {"__address__" = "blade-pi3:9243"},
+              {"__address__" = "blade-pi4:9243"},
+              {"__address__" = "timepi:9243"},
+            ]
+            forward_to = [prometheus.remote_write.mimir.receiver]
+          }
+
+          prometheus.scrape "blade_exporter" {
+            job_name = "blade_exporter"
+            targets = [
+              {"__address__" = "blade-pi1:9666"},
+              {"__address__" = "blade-pi2:9666"},
+              {"__address__" = "blade-pi3:9666"},
+              {"__address__" = "blade-pi4:9666"},
             ]
             forward_to = [prometheus.remote_write.mimir.receiver]
           }
@@ -128,6 +150,25 @@
             job_name = "cadvisor"
             targets = [
               {"__address__" = "192.168.0.64:8123"},
+            ]
+            forward_to   = [prometheus.remote_write.mimir.receiver]
+            metrics_path = "/metrics"
+          }
+
+          prometheus.scrape "tailscale_exporter" {
+            job_name = "tailscale_exporter"
+            targets = [
+              {"__address__" = "100.100.100.100" },
+              {"__address__" = "100.65.216.48:5252" },
+              {"__address__" = "100.92.89.43:5252" },
+              {"__address__" = "100.94.152.81:5252" },
+              {"__address__" = "100.123.236.103:5252" },
+              {"__address__" = "100.126.248.78:5252" },
+              {"__address__" = "100.103.254.83:5252" },
+              {"__address__" = "100.95.24.14:5252" },
+              {"__address__" = "100.122.149.90:5252" },
+              {"__address__" = "100.83.246.57:5252" },
+              {"__address__" = "100.85.86.18:5252" },
             ]
             forward_to   = [prometheus.remote_write.mimir.receiver]
             metrics_path = "/metrics"
