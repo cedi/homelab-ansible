@@ -23,6 +23,17 @@
     loop_var: cgroup_item
   notify: Reboot Pi
 
+- name: Remove cmdline items if necessary
+  when: rpi_cmdline_params_removed is defined and (rpi_cmdline_params_removed | length > 0)
+  ansible.builtin.replace:
+    path: "{{ (boot_firmware_cmdline_txt.stat.exists) | ternary('/boot/firmware/cmdline.txt', '/boot/cmdline.txt') }}"
+    regexp: "{{ cmdline_item }}"
+    replace: ""
+  loop: "{{ rpi_cmdline_params_removed }}"
+  loop_control:
+    loop_var: cmdline_item
+  notify: Reboot Pi
+
 - name: Load additional dtoverlays
   when:
     - boot_firmware_config_txt.stat.exists
@@ -35,6 +46,31 @@
   loop: "{{ rpi_dtoverlays }}"
   loop_control:
     loop_var: overlay
+  notify: Reboot Pi
+
+- name: Load enable UART
+  when:
+    - boot_firmware_config_txt.stat.exists
+    - rpi_enable_uart is defined and rpi_enable_uart == true
+  ansible.builtin.lineinfile:
+    path: /boot/firmware/config.txt
+    insertafter: "[all]"
+    line: "enable_uart=1"
+    state: present
+  notify: Reboot Pi
+
+- name: Set additional dtparam
+  when:
+    - boot_firmware_config_txt.stat.exists
+    - rpi_additional_dtparam is defined and (rpi_additional_dtparam | length>0)
+  ansible.builtin.lineinfile:
+    path: /boot/firmware/config.txt
+    insertafter: "[all]"
+    line: "dtparam={{ dtparam }}"
+    state: present
+  loop: "{{ rpi_additional_dtparam }}"
+  loop_control:
+    loop_var: dtparam
   notify: Reboot Pi
 
 - name: Control Fan to be less aggressive

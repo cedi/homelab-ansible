@@ -41,14 +41,14 @@
     - name: Set raspberry_pi_model fact
       set_fact:
         raspberry_pi_model: "{{ pi_model_line | regex_search(pi_model_regex, '\\2') | first }}"
-  when: '"Compute Model" not in pi_model_line'
+  when: '"Compute Module" not in pi_model_line'
 
 - name: Gather raspberry_pi_version fact (ComputeModule)
   block:
-    - name: Set raspberry_pi_version fact
+    - name: Set raspberry_pi_version fact (ComputeModule)
       set_fact:
-        raspberry_pi_version: "{{ pi_model_line | regex_search(pi_model_regex_cm, '\\2') | first }}"
-    - name: Set raspberry_pi_model fact
+        raspberry_pi_version: "{{ pi_model_line | regex_search(pi_model_regex_cm, '\\1') | first }}"
+    - name: Set raspberry_pi_model fact (ComputeModule)
       set_fact:
         raspberry_pi_model: "ComputeModule"
-  when: '"Compute Model" in pi_model_line'
+  when: '"Compute Module" in pi_model_line'

@@ -23,3 +23,22 @@
     - "prereq/default.yml"
   when:
     - raspberry_pi|default(false)
+
+- name: Install rpi-clone
+  become: true
+  when:
+    - raspberry_pi|default(false)
+    - raspberry_pi_version == 5
+  block:
+    - name: Clone rpi-clone repository
+      git:
+        repo: "https://github.com/geerlingguy/rpi-clone.git"
+        dest: "~/rpi-clone"
+        clone: true
+        update: true
+        recursive: true
+
+    - name: Install rpi-clone
+      command: "sudo cp rpi-clone rpi-clone-setup /usr/local/sbin"
+      args:
+        chdir: "~/rpi-clone"

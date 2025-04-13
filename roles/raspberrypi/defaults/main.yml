@@ -11,3 +11,13 @@ rpi_pciex1_gen: ""
 # rpi_pciex1_gen: 3
 
 rpi_enable_cgroups: true
+
+rpi_enable_uart: false
+
+rpi_additional_dtparam: []
+#dtparam=i2c_arm=on
+#dtparam=i2s=on
+#dtparam=spi=on
+
+rpi_cmdline_params_removed: []
+#  - console=serial0,115200
