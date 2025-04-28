@@ -1,0 +1,34 @@
+---
+nut_server_state: started
+nut_server_enabled: true
+
+nut_server_ups_name: ups
+nut_server_ups_description: ""
+nut_server_ups_port: ""
+
+nut_server_ups_driver: "usbhid-ups"
+nut_server_ups_product: ""
+nut_server_ups_product_id: ""
+nut_server_ups_vendor: ""
+nut_server_ups_vendor_id: ""
+nut_server_ups_bus: ""
+nut_server_ups_serial: ""
+nut_server_ups_device: ""
+nut_server_ups_busport: ""
+
+nut_server_shutdown_finaldelay: "180"
+
+nut_server_ups_admin_user: admin
+nut_server_ups_admin_password: foobar2342
+
+nut_server_upsd_users: |
+  [admin]
+      password = foobar2342
+      actions = set
+      actions = fsd
+      instcmds = all
+      upsmon primary
+
+  [monuser]
+      password = secret
+      upsmon secondary

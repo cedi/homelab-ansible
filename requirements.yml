@@ -7,3 +7,4 @@ collections:
 roles:
   - name: geerlingguy.node_exporter
   - name: artis3n.tailscale
+  - name: geerlingguy.nut_client

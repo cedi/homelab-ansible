@@ -1,0 +1,71 @@
+---
+- name: Ensure NUT is installed.
+  package:
+    name: nut
+    state: present
+
+- name: Configure NUT mode.
+  lineinfile:
+    path: /etc/nut/nut.conf
+    regexp: '^MODE.+'
+    line: "MODE=netserver"
+    state: present
+    mode: 0640
+  notify: restart nut-server
+
+- name: Change UPSD configuration.
+  lineinfile:
+    path: /etc/nut/upsd.conf
+    regexp: '^LISTEN 0.+'
+    line: "LISTEN 0.0.0.0 3493"
+    insertafter: EOF
+    state: present
+    mode: 0640
+  notify: restart nut-server
+
+- name: Configure UPSD users.
+  blockinfile:
+    path: /etc/nut/upsd.users
+    marker: "# {mark} ANSIBLE MANAGED BLOCK"
+    block: "{{ nut_server_upsd_users }}"
+    state: present
+    mode: 0640
+  notify: restart nut-server
+
+- name: Change NUT UPS configuration.
+  blockinfile:
+    path: /etc/nut/ups.conf
+    marker: "# {mark} ANSIBLE MANAGED BLOCK"
+    block: |
+      [{{ nut_server_ups_name }}]
+          driver = "dummy-ups"
+          port = "{{ nut_server_ups_name }}@{{ nut_server_server }}"
+          desc = "Proxy UPS"
+    state: present
+    mode: 0640
+  notify: restart nut-server
+
+- name: Configure UPS Monitor.
+  lineinfile:
+    path: /etc/nut/upsmon.conf
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    insertafter: EOF
+    state: present
+    mode: 0640
+  notify: restart nut-monitor
+  with_items:
+    - regexp: '^MONITOR.+'
+      line: "MONITOR {{ nut_server_ups_name }}@{{ nut_server_server }} 1 {{ nut_server_ups_admin_user }} {{ nut_server_ups_admin_password }} slave"
+    - regexp: '^FINALDELAY.+'
+      line: "FINALDELAY {{ nut_server_shutdown_finaldelay }}"
+
+- name: Ensure NUT is running (if configured).
+  service:
+    name: "{{ item }}"
+    state: "{{ nut_server_state }}"
+    enabled: "{{ nut_server_enabled }}"
+  with_items:
+    - nut-server
+    - nut-monitor
+  when: not ansible_check_mode

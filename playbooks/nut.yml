@@ -1,0 +1,92 @@
+---
+- name: Set up NUT Server
+  hosts: nuc
+  become: true
+  gather_facts: true
+  roles:
+    - nut_server
+
+- name: Set up NUT Client
+  hosts:
+    - ceph_cluster
+    - k3s_cluster
+    - compute_blades
+    - standalone_pis
+  become: true
+  gather_facts: true
+  roles:
+    - geerlingguy.nut_client
+
+- name: Shut-down unimportant stuff early
+  hosts:
+    - ceph_cluster
+    - k3s_cluster
+    - compute_blades
+  become: true
+  gather_facts: false
+
+  handlers:
+    - name: restart nut-monitor
+      service:
+        name: nut-monitor
+        state: restarted
+      when: not ansible_check_mode
+
+  tasks:
+    - name: Change UPSMON configuration.
+      lineinfile:
+        path: /etc/nut/upsmon.conf
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        insertafter: EOF
+        state: present
+        mode: 0640
+      notify: restart nut-monitor
+      loop:
+        - regexp: '^POWERDOWNFLAG.+'
+          line: "POWERDOWNFLAG /etc/nut/killpower"
+        - regexp: '^DEADTIME.+'
+          line: "DEADTIME 30"
+        - regexp: '^FINALDELAY.+'
+          line: "FINALDELAY 5"
+        - regexp: '^NOTIFYCMD.+'
+          line: "NOTIFYCMD /etc/nut/upssched-cmd"
+        - regexp: '^NOTIFYFLAG ONLINE.+'
+          line: "NOTIFYFLAG ONLINE SYSLOG+EXEC"
+        - regexp: '^NOTIFYFLAG ONBATT.+'
+          line: "NOTIFYFLAG ONBATT SYSLOG+EXEC"
+
+    - name: Schedule delayed shutdown.
+      blockinfile:
+        path: /etc/nut/upssched.conf
+        marker: "# {mark} ANSIBLE MANAGED BLOCK"
+        block: |
+          CMDSCRIPT /etc/nut/upssched-cmd
+          PIPEFN /var/run/nut/upssched.pipe
+          LOCKFN /var/run/nut/upssched.lock
+
+          AT ONBATT * START-TIMER onbatt_shutdown 300
+          AT ONLINE * CANCEL-TIMER onbatt_shutdown
+        state: present
+        mode: 0640
+
+    - name: Create upssched-cmd script if not exists
+      file:
+        path: /etc/nut/upssched-cmd
+        state: touch
+        mode: '0750'
+
+    - name: Execute shutdown when timer fires.
+      blockinfile:
+        path: /etc/nut/upssched-cmd
+        marker: "# {mark} ANSIBLE MANAGED BLOCK"
+        block: |
+          #!/bin/bash
+          case $1 in
+              onbatt_shutdown)
+                  logger "UPS on battery for 5 minutes - shutting down system"
+                  /sbin/shutdown -h now "UPS on battery for 5 minutes"
+                  ;;
+          esac
+        state: present
+        mode: 0750

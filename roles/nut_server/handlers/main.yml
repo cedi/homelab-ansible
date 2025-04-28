@@ -1,0 +1,12 @@
+---
+- name: restart nut-server
+  service:
+    name: nut-server
+    state: restarted
+  when: not ansible_check_mode
+
+- name: restart nut-monitor
+  service:
+    name: nut-monitor
+    state: restarted
+  when: not ansible_check_mode
