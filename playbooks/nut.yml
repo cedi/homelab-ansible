@@ -33,15 +33,22 @@
       when: not ansible_check_mode
 
   tasks:
-    - name: Change UPSMON configuration.
+    - name: Ensure upssched-cmd script exists with correct owner
+      file:
+        path: /etc/nut/upssched-cmd
+        state: touch
+        owner: root
+        group: nut
+        mode: '0750'
+
+    - name: Change UPSMON configuration
       lineinfile:
         path: /etc/nut/upsmon.conf
         regexp: "{{ item.regexp }}"
         line: "{{ item.line }}"
         insertafter: EOF
         state: present
-        mode: 0640
-      notify: restart nut-monitor
+        mode: '0640'
       loop:
         - regexp: '^POWERDOWNFLAG.+'
           line: "POWERDOWNFLAG /etc/nut/killpower"
@@ -50,33 +57,37 @@
         - regexp: '^FINALDELAY.+'
           line: "FINALDELAY 5"
         - regexp: '^NOTIFYCMD.+'
-          line: "NOTIFYCMD /etc/nut/upssched-cmd"
+          line: "NOTIFYCMD /sbin/upssched"
         - regexp: '^NOTIFYFLAG ONLINE.+'
           line: "NOTIFYFLAG ONLINE SYSLOG+EXEC"
         - regexp: '^NOTIFYFLAG ONBATT.+'
           line: "NOTIFYFLAG ONBATT SYSLOG+EXEC"
+        - regexp: '^RUN_AS_USER.+'
+          line: "RUN_AS_USER root"
+      notify: restart nut-monitor
 
-    - name: Schedule delayed shutdown.
-      blockinfile:
+    - name: Configure upssched.conf for 60s shutdown timer
+      lineinfile:
         path: /etc/nut/upssched.conf
-        marker: "# {mark} ANSIBLE MANAGED BLOCK"
-        block: |
-          CMDSCRIPT /etc/nut/upssched-cmd
-          PIPEFN /var/run/nut/upssched.pipe
-          LOCKFN /var/run/nut/upssched.lock
-
-          AT ONBATT * START-TIMER onbatt_shutdown 300
-          AT ONLINE * CANCEL-TIMER onbatt_shutdown
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        insertafter: EOF
         state: present
-        mode: 0640
+        mode: '0640'
+      loop:
+        - regexp: '^CMDSCRIPT.+'
+          line: "CMDSCRIPT /etc/nut/upssched-cmd"
+        - regexp: '^PIPEFN.+'
+          line: "PIPEFN /var/run/nut/upssched.pipe"
+        - regexp: '^LOCKFN.+'
+          line: "LOCKFN /var/run/nut/upssched.lock"
+        - regexp: '^AT ONBATT.+'
+          line: "AT ONBATT * START-TIMER onbatt_shutdown 60"
+        - regexp: '^AT ONLINE.+'
+          line: "AT ONLINE * CANCEL-TIMER onbatt_shutdown"
+      notify: restart nut-monitor
 
-    - name: Create upssched-cmd script if not exists
-      file:
-        path: /etc/nut/upssched-cmd
-        state: touch
-        mode: '0750'
-
-    - name: Execute shutdown when timer fires.
+    - name: Configure shutdown script for upssched
       blockinfile:
         path: /etc/nut/upssched-cmd
         marker: "# {mark} ANSIBLE MANAGED BLOCK"
@@ -84,9 +95,8 @@
           #!/bin/bash
           case $1 in
               onbatt_shutdown)
-                  logger "UPS on battery for 5 minutes - shutting down system"
-                  /sbin/shutdown -h now "UPS on battery for 5 minutes"
+                  logger "UPS on battery for 1 minute - shutting down system"
+                  /usr/bin/systemctl poweroff -i
                   ;;
           esac
-        state: present
-        mode: 0750
+        mode: '0750'
