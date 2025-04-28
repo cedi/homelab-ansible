@@ -17,6 +17,14 @@ all:
     tailscale_tags:
       - homelab
 
+    nut_client_ups: ups
+    nut_client_server: nuc.sphinx-map.ts.net
+    nut_client_username: monuser
+    nut_client_password: secret
+
+    nut_client_state: started
+    nut_client_enabled: true
+
   children:
     k3s_cluster:
     standalone_pis:
@@ -33,6 +41,7 @@ jitsi:
       tailscale_tags:
         - core-services
         - o11y-agent
+
 prod:
   hosts:
     hole:
@@ -42,18 +51,25 @@ prod:
         - core-infra
         - core-services
       tailscale_args: "--ssh --advertise-exit-node"
+
     synology:
       ansible_host: nas
       ansible_user: king
       tailscale_tags:
         - core-infra
         - core-services
+
     nuc:
       ansible_host: nuc
       ansible_user: root
       tailscale_tags:
         - core-infra
         - o11y-collector
+
+      nut_server_ups_name: ups
+      nut_server_server: "192.168.0.64"
+      nut_server_ups_admin_user: monuser
+      nut_server_ups_admin_password: secret
 
 standalone_pis:
   hosts:
@@ -62,10 +78,8 @@ standalone_pis:
       tailscale_tags:
         - homelab
         - jumphost
-    lora:
-      ansible_host: lora.local
-    timepi-gps:
-      ansible_host: timepi-gps
+    timepi:
+      ansible_host: timepi
       ansible_user: cedi
       rpi_enable_uart: true
       rpi_additional_dtparam:
@@ -122,11 +136,11 @@ raspberry_pi_5:
 ceph_cluster:
   hosts:
     storagepi-ceph1:
-      ansible_host: storagepi-ceph1
+      ansible_host: storagepi-ceph1.local
     storagepi-ceph2:
-      ansible_host: storagepi-ceph2
+      ansible_host: storagepi-ceph2.local
     storagepi-ceph3:
-      ansible_host: storagepi-ceph3
+      ansible_host: storagepi-ceph3.local
 
 compute_blades:
   hosts:
