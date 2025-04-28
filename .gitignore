@@ -27,5 +27,5 @@
 
 ## ignore ansible roles installed by galaxy
 
-roles/artis3n.tailscale
-roles/geerlingguy.node_exporter
+roles/artis3n.*
+roles/geerlingguy.*
