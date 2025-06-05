@@ -6,7 +6,7 @@
 
 	"image": "mcr.microsoft.com/devcontainers/base:jammy",
 	"features": {
-		"ghcr.io/hspaans/devcontainer-features/ansible-lint:1": {},
+		"ghcr.io/hspaans/devcontainer-features/ansible-lint:2": {},
 		"ghcr.io/devcontainers-extra/features/ansible:2": {},
 		"ghcr.io/devcontainers-extra/features/yamllint:2": {},
 		"ghcr.io/tailscale/codespace/tailscale": {
