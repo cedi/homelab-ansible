@@ -1,6 +1,7 @@
 ---
 all:
   vars:
+    ansible_python_interpreter: /usr/bin/python3
     tailscale_authkey: !vault |
       $ANSIBLE_VAULT;1.1;AES256
       33343464353565343435326333373030653633663035313230303161626130353238613036326164
@@ -26,8 +27,7 @@ all:
     nut_client_enabled: true
 
   children:
-    k3s_cluster:
-    standalone_pis:
+    raspberry_pis:
     jitsi:
   hosts:
     lyn:
@@ -78,6 +78,7 @@ standalone_pis:
       tailscale_tags:
         - homelab
         - jumphost
+      nut_shutdown_behavior_affinity: late
     timepi:
       ansible_host: timepi
       ansible_user: cedi
@@ -91,6 +92,7 @@ standalone_pis:
         - pps-gpio,gpiopin=18
       rpi_cmdline_params_removed:
         - console=serial0,115200
+      nut_shutdown_behavior_affinity: late
 
 raspberry_pis:
   vars:
@@ -134,6 +136,8 @@ raspberry_pi_5:
     timepi-gps:
 
 ceph_cluster:
+  vars:
+    nut_shutdown_behavior_affinity: early
   hosts:
     storagepi-ceph1:
       ansible_host: storagepi-ceph1.local
@@ -143,15 +147,17 @@ ceph_cluster:
       ansible_host: storagepi-ceph3.local
 
 compute_blades:
+  vars:
+    nut_shutdown_behavior_affinity: early
   hosts:
     blade-pi1:
-      ansible_host: blade-pi1.local
+      ansible_host: blade-pi1
     blade-pi2:
-      ansible_host: blade-pi2.local
+      ansible_host: blade-pi2
     blade-pi3:
-      ansible_host: blade-pi3.local
+      ansible_host: blade-pi3
     blade-pi4:
-      ansible_host: blade-pi4.local
+      ansible_host: blade-pi4
 
 k3s_cluster:
   vars:
@@ -168,6 +174,7 @@ k3s_cluster:
       35306131356637383433663363396631323731383030633239666466636462373235663463353136
       6133666463343461390a356535343336336132623365646531323763623435356530316235363063
       64656538336237653838343534663939653333333562633364626236613764313332
+    nut_shutdown_behavior_affinity: early
   children:
     server:
       hosts:

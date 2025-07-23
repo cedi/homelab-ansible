@@ -7,7 +7,7 @@
 - name: Configure NUT mode.
   lineinfile:
     path: /etc/nut/nut.conf
-    regexp: '^MODE.+'
+    regexp: "^MODE.+"
     line: "MODE=netserver"
     state: present
     mode: 0640
@@ -16,7 +16,7 @@
 - name: Change UPSD configuration.
   lineinfile:
     path: /etc/nut/upsd.conf
-    regexp: '^LISTEN 0.+'
+    regexp: "^LISTEN 0.+"
     line: "LISTEN 0.0.0.0 3493"
     insertafter: EOF
     state: present
@@ -55,10 +55,12 @@
     mode: 0640
   notify: restart nut-monitor
   with_items:
-    - regexp: '^MONITOR.+'
+    - regexp: "^MONITOR.+"
       line: "MONITOR {{ nut_server_ups_name }}@{{ nut_server_server }} 1 {{ nut_server_ups_admin_user }} {{ nut_server_ups_admin_password }} slave"
-    - regexp: '^FINALDELAY.+'
+    - regexp: "^FINALDELAY.+"
       line: "FINALDELAY {{ nut_server_shutdown_finaldelay }}"
+    - regexp: "^NOTIFYFLAG FSD.+"
+      line: "NOTIFYFLAG FSD SYSLOG+EXEC"
 
 - name: Ensure NUT is running (if configured).
   service:

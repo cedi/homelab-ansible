@@ -8,95 +8,15 @@
 
 - name: Set up NUT Client
   hosts:
-    - ceph_cluster
-    - k3s_cluster
-    - compute_blades
-    - standalone_pis
+    - raspberry_pis
   become: true
   gather_facts: true
   roles:
     - geerlingguy.nut_client
 
-- name: Shut-down unimportant stuff early
+- name: Apply NUT shutdown behavior
   hosts:
-    - ceph_cluster
-    - k3s_cluster
-    - compute_blades
+    - raspberry_pis
   become: true
-  gather_facts: false
-
-  handlers:
-    - name: restart nut-monitor
-      service:
-        name: nut-monitor
-        state: restarted
-      when: not ansible_check_mode
-
-  tasks:
-    - name: Ensure upssched-cmd script exists with correct owner
-      file:
-        path: /etc/nut/upssched-cmd
-        state: touch
-        owner: root
-        group: nut
-        mode: '0750'
-
-    - name: Change UPSMON configuration
-      lineinfile:
-        path: /etc/nut/upsmon.conf
-        regexp: "{{ item.regexp }}"
-        line: "{{ item.line }}"
-        insertafter: EOF
-        state: present
-        mode: '0640'
-      loop:
-        - regexp: '^POWERDOWNFLAG.+'
-          line: "POWERDOWNFLAG /etc/nut/killpower"
-        - regexp: '^DEADTIME.+'
-          line: "DEADTIME 30"
-        - regexp: '^FINALDELAY.+'
-          line: "FINALDELAY 5"
-        - regexp: '^NOTIFYCMD.+'
-          line: "NOTIFYCMD /sbin/upssched"
-        - regexp: '^NOTIFYFLAG ONLINE.+'
-          line: "NOTIFYFLAG ONLINE SYSLOG+EXEC"
-        - regexp: '^NOTIFYFLAG ONBATT.+'
-          line: "NOTIFYFLAG ONBATT SYSLOG+EXEC"
-        - regexp: '^RUN_AS_USER.+'
-          line: "RUN_AS_USER root"
-      notify: restart nut-monitor
-
-    - name: Configure upssched.conf for 60s shutdown timer
-      lineinfile:
-        path: /etc/nut/upssched.conf
-        regexp: "{{ item.regexp }}"
-        line: "{{ item.line }}"
-        insertafter: EOF
-        state: present
-        mode: '0640'
-      loop:
-        - regexp: '^CMDSCRIPT.+'
-          line: "CMDSCRIPT /etc/nut/upssched-cmd"
-        - regexp: '^PIPEFN.+'
-          line: "PIPEFN /var/run/nut/upssched.pipe"
-        - regexp: '^LOCKFN.+'
-          line: "LOCKFN /var/run/nut/upssched.lock"
-        - regexp: '^AT ONBATT.+'
-          line: "AT ONBATT * START-TIMER onbatt_shutdown 60"
-        - regexp: '^AT ONLINE.+'
-          line: "AT ONLINE * CANCEL-TIMER onbatt_shutdown"
-      notify: restart nut-monitor
-
-    - name: Configure shutdown script for upssched
-      blockinfile:
-        path: /etc/nut/upssched-cmd
-        marker: "# {mark} ANSIBLE MANAGED BLOCK"
-        block: |
-          #!/bin/bash
-          case $1 in
-              onbatt_shutdown)
-                  logger "UPS on battery for 1 minute - shutting down system"
-                  /usr/bin/systemctl poweroff -i
-                  ;;
-          esac
-        mode: '0750'
+  roles:
+    - role: nut_shutdown_behavior

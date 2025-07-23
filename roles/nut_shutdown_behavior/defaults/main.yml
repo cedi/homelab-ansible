@@ -1,0 +1,2 @@
+---
+nut_shutdown_behavior_affinity: early # can be 'early' or 'late'

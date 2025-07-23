@@ -1,0 +1,115 @@
+---
+- name: Ensure upssched-cmd script exists
+  ansible.builtin.file:
+    path: /etc/nut/upssched-cmd
+    state: touch
+    owner: root
+    group: nut
+    mode: "0750"
+
+- name: Configure static upsmon.conf lines
+  ansible.builtin.lineinfile:
+    path: /etc/nut/upsmon.conf
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    insertafter: EOF
+    state: present
+    mode: "0640"
+  loop:
+    - { regexp: "^POWERDOWNFLAG.+", line: "POWERDOWNFLAG /etc/nut/killpower" }
+    - { regexp: "^DEADTIME.+", line: "DEADTIME 30" }
+    - { regexp: "^NOTIFYCMD.+", line: "NOTIFYCMD /sbin/upssched" }
+    - { regexp: "^NOTIFYFLAG ONLINE.+", line: "NOTIFYFLAG ONLINE SYSLOG+EXEC" }
+    - { regexp: "^NOTIFYFLAG ONBATT.+", line: "NOTIFYFLAG ONBATT SYSLOG+EXEC" }
+    - { regexp: "^NOTIFYFLAG FSD.+", line: "NOTIFYFLAG FSD SYSLOG+EXEC" }
+    - { regexp: "^RUN_AS_USER.+", line: "RUN_AS_USER root" }
+  notify: restart nut-monitor
+
+- name: Set FINALDELAY for early shutdown
+  ansible.builtin.lineinfile:
+    path: /etc/nut/upsmon.conf
+    regexp: "^FINALDELAY.+"
+    line: "FINALDELAY 5"
+    insertafter: EOF
+    state: present
+    mode: "0640"
+  when: nut_shutdown_behavior_affinity == 'early'
+  notify: restart nut-monitor
+
+- name: Set FINALDELAY for late shutdown
+  ansible.builtin.lineinfile:
+    path: /etc/nut/upsmon.conf
+    regexp: "^FINALDELAY.+"
+    line: "FINALDELAY 180"
+    insertafter: EOF
+    state: present
+    mode: "0640"
+  when: nut_shutdown_behavior_affinity == 'late'
+  notify: restart nut-monitor
+
+- name: Configure static upssched.conf lines
+  ansible.builtin.lineinfile:
+    path: /etc/nut/upssched.conf
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    insertafter: EOF
+    state: present
+    mode: "0640"
+  loop:
+    - regexp: "^CMDSCRIPT.+"
+      line: "CMDSCRIPT /etc/nut/upssched-cmd"
+    - regexp: "^PIPEFN.+"
+      line: "PIPEFN /var/run/nut/upssched.pipe"
+    - regexp: "^LOCKFN.+"
+      line: "LOCKFN /var/run/nut/upssched.lock"
+  notify: restart nut-monitor
+
+- name: Configure early shutdown timers for upssched.conf
+  ansible.builtin.lineinfile:
+    path: /etc/nut/upssched.conf
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    insertafter: EOF
+    state: present
+    mode: "0640"
+  loop:
+    - regexp: "^AT ONBATT.+"
+      line: "AT ONBATT * START-TIMER onbatt_shutdown 60"
+    - regexp: "^AT ONLINE.+"
+      line: "AT ONLINE * CANCEL-TIMER onbatt_shutdown"
+    - regexp: "^AT FSD.+"
+      line: "AT FSD * EXECUTE immediate_shutdown"
+  when: nut_shutdown_behavior_affinity == 'early'
+  notify: restart nut-monitor
+
+- name: Configure late shutdown trigger for upssched.conf
+  ansible.builtin.lineinfile:
+    path: /etc/nut/upssched.conf
+    regexp: "^AT FSD.+"
+    line: "AT FSD * EXECUTE delayed_shutdown"
+    insertafter: EOF
+    state: present
+    mode: "0640"
+  when: nut_shutdown_behavior_affinity == 'late'
+  notify: restart nut-monitor
+
+- name: Configure shutdown script for upssched-cmd
+  ansible.builtin.blockinfile:
+    path: /etc/nut/upssched-cmd
+    marker: "# {mark} ANSIBLE MANAGED BLOCK"
+    block: |
+      #!/bin/bash
+      case $1 in
+          onbatt_shutdown)
+              logger "UPS on battery for 1 minute - shutting down system"
+              /usr/bin/systemctl poweroff -i
+              ;;
+          immediate_shutdown)
+              logger "UPS critical (FSD) - immediate shutdown"
+              /usr/bin/systemctl poweroff -i
+              ;;
+          delayed_shutdown)
+              logger "UPS critical (FSD) - delayed shutdown"
+              /usr/bin/systemctl poweroff -i
+              ;;
+      esac
