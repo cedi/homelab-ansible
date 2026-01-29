@@ -1,19 +1,23 @@
 ---
-- name: Clone dotfiles
+- name: Clone dotfiles repository
   git:
-    repo: https://github.com/cedi/dotfiles.git
-    dest: $HOME/.dotfiles
-    clone: true
+    repo: "{{ base__dotfiles_repo }}"
+    dest: "{{ ansible_env.HOME }}/.dotfiles"
+    version: main
     update: true
-    recursive: true
 
-- name: Install dotfiles using stow
-  command: "stow ."
+- name: Run dotfiles installer
+  command: >
+    bash install_linux.sh
+    --yes
+    --preset {{ base__dotfiles_preset }}
   args:
-    chdir: $HOME/.dotfiles
+    chdir: "{{ ansible_env.HOME }}/.dotfiles"
+  register: dotfiles_result
+  changed_when: "'installed' in dotfiles_result.stdout or 'Installed' in dotfiles_result.stdout"
 
-- name: change default shell to zsh
+- name: Set default shell to fish
   become: true
   user:
     name: "{{ ansible_user }}"
-    shell: /usr/bin/zsh
+    shell: "{{ base__default_shell }}"

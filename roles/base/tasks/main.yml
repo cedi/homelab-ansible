@@ -1,41 +1,21 @@
-- name: Include os specific variables
-  include_vars: "{{ ansible_os_family|lower }}.yml"
+---
+- name: Include OS-specific variables
+  include_vars: "{{ ansible_os_family | lower }}.yml"
   tags: [base]
 
-- name: Install basic packages
+- name: Install bootstrap packages
   package:
-    name: "{{ base__system_packages }}"
+    name: "{{ base__bootstrap_packages }}"
     state: present
-
-- name: Install additional packages
-  import_tasks: install_extra.yml
   become: true
   tags: [base]
 
-- name: Install additional tools
-  import_tasks: install_scripts.yml
-  become: true
-  tags: [base]
-
-- name: Install additional tools from git
-  import_tasks: install_tools_from_git.yml
-  become: true
-  tags: [base]
-
-- name: Update and upgrade apt packages
-  become: true
-  apt:
-    upgrade: yes
-    update_cache: yes
-    cache_valid_time: 86400 #One day
-  when: "ansible_os_family|lower == 'debian'"
-
-- name: Configure basic stuff
+- name: Configure locales
   import_tasks: configure.yml
   become: true
   tags: [base]
 
-- name: Install dotfiles
+- name: Setup dotfiles
   import_tasks: dotfiles.yml
   become: false
-  tags: [base]
+  tags: [base, dotfiles]

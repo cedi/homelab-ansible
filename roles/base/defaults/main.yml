@@ -1,30 +1,16 @@
 ---
-base__system_packages: []
+# Dotfiles configuration
+base__dotfiles_repo: "https://github.com/cedi/dotfiles.git"
+base__dotfiles_preset: "server"  # server, core, or full
+base__default_shell: "/usr/bin/fish"
+
+# Locale configuration
 base__locales:
   - "en_US.UTF-8"
-base__lang: "en_US.UTF8"
-base__home_dir: "/home"
-base__additional_package_repositories: []
-base__installer_scripts:
-  - url: https://raw.githubusercontent.com/warrensbox/terraform-switcher/release/install.sh
-    name: tfswitch-install.sh
-    creates: /usr/local/bin/tfswitch
-  - url: https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh
-    name: zoxide_install.sh
-    args: "--bin-dir /usr/local/bin"
-    creates: /usr/local/bin/zoxide
-  - url: https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh
-    name: nvm_install.sh
-    creates: /home/pi/.config/nvm
-  - url: https://ohmyposh.dev/install.sh
-    name: ohmypos_install.sh
-    args: "-d /usr/local/bin"
-    creates: /usr/local/bin/oh-my-posh
-  - url: https://sh.rustup.rs
-    name: rust_install.sh
-    args: "-y"
-    creates: /home/pi/.cargo/bin/cargo
-base__installer_from_git:
-  - repo: https://github.com/udhos/update-golang.git
-    dest: /home/{{ ansible_user }}/.update_golang/
-    command: "./update-golang.sh"
+base__lang: "en_US.UTF-8"
+
+# Minimal bootstrap packages (just enough to run dotfiles installer)
+base__bootstrap_packages:
+  - git
+  - curl
+  - sudo

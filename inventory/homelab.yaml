@@ -75,6 +75,7 @@ standalone_pis:
   hosts:
     jumphost:
       ansible_host: jumphost.local
+      base__dotfiles_preset: "core"
       tailscale_tags:
         - homelab
         - jumphost
