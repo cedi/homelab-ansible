@@ -71,6 +71,12 @@ prod:
       nut_server_ups_admin_user: monuser
       nut_server_ups_admin_password: secret
 
+      tsidp_use_funnel: true
+      tsidp_advertise_tags:
+        - core-infra
+        - core-services
+        - tsidp
+
 standalone_pis:
   hosts:
     jumphost:

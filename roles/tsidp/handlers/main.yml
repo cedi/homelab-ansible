@@ -1,5 +1,6 @@
 ---
 - name: restart tsidp
-  service:
+  become: true
+  ansible.builtin.service:
     name: tsidp
     state: restarted

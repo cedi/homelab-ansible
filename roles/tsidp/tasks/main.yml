@@ -1,33 +1,103 @@
 ---
-- name: install tsidp
-  become: false
-  ansible.builtin.shell: "go install tailscale.com/cmd/tsidp@latest"
+- name: Ensure tsidp install directory exists.
+  become: true
+  ansible.builtin.file:
+    path: "{{ tsidp_install_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Ensure tsidp state directory exists.
+  become: true
+  ansible.builtin.file:
+    path: "{{ tsidp_state_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Check legacy tsidp state directory.
+  become: true
+  ansible.builtin.stat:
+    path: "{{ tsidp_legacy_state_dir }}"
+  register: tsidp_legacy_state
+  when: tsidp_migrate_legacy_state | bool
+
+- name: Check tsidp state marker.
+  become: true
+  ansible.builtin.stat:
+    path: "{{ tsidp_state_dir }}/tailscaled.state"
+  register: tsidp_state_marker
+  when:
+    - tsidp_migrate_legacy_state | bool
+    - tsidp_legacy_state.stat.isdir | default(false)
+
+- name: Migrate legacy tsidp state.
+  become: true
+  ansible.builtin.copy:
+    src: "{{ tsidp_legacy_state_dir }}/"
+    dest: "{{ tsidp_state_dir }}/"
+    remote_src: true
+    mode: preserve
+  when:
+    - tsidp_migrate_legacy_state | bool
+    - tsidp_legacy_state.stat.isdir | default(false)
+    - not (tsidp_state_marker.stat.exists | default(false))
+
+- name: Check installed tsidp binary.
+  become: true
+  ansible.builtin.stat:
+    path: "{{ tsidp_binary_path }}"
+    checksum_algorithm: sha256
+  register: tsidp_binary_before
+
+- name: Install tsidp.
+  become: true
+  ansible.builtin.command: "go install github.com/tailscale/tsidp@{{ tsidp_version }}"
+  environment:
+    GOBIN: "{{ tsidp_install_dir }}"
+  changed_when: false
+
+- name: Check updated tsidp binary.
+  become: true
+  ansible.builtin.stat:
+    path: "{{ tsidp_binary_path }}"
+    checksum_algorithm: sha256
+  register: tsidp_binary_after
+
+- name: Mark tsidp binary changes.
+  ansible.builtin.debug:
+    msg: "tsidp binary changed"
+  changed_when: true
+  notify: restart tsidp
+  when: >
+    (not tsidp_binary_before.stat.exists)
+    or (tsidp_binary_before.stat.checksum != tsidp_binary_after.stat.checksum)
 
 - name: Copy the tsidp env-var file.
   become: true
-  template:
+  ansible.builtin.template:
     src: tsidp.env.j2
     dest: /etc/default/tsidp
-    mode: 0644
+    mode: "0644"
+  no_log: "{{ tsidp_authkey | default('', true) | length > 0 }}"
+  notify: restart tsidp
 
 - name: Copy the tsidp systemd unit file.
   become: true
-  template:
+  ansible.builtin.template:
     src: tsidp.service.j2
     dest: /etc/systemd/system/tsidp.service
-    mode: 0644
+    mode: "0644"
   register: tsidp
 
 - name: Reload systemd daemon if unit file is changed.
   become: true
-  systemd:
+  ansible.builtin.systemd:
     daemon_reload: true
   notify: restart tsidp
   when: tsidp is changed
 
 - name: Ensure tsidp is running and enabled at boot.
   become: true
-  service:
+  ansible.builtin.service:
     name: tsidp
     state: "started"
     enabled: true

@@ -1,0 +1,27 @@
+[tools]
+ansible-core = "2.20.6"
+uv = "0.11.19"
+
+[tasks."ansible:syntax"]
+description = "Syntax-check the full site playbook"
+run = "ansible-playbook -i inventory/homelab.yaml playbooks/site.yml --syntax-check"
+
+[tasks."ansible:check"]
+description = "Run the full site playbook in check mode"
+run = "ansible-playbook -i inventory/homelab.yaml playbooks/site.yml --check"
+
+[tasks."ansible:apply"]
+description = "Apply the full site playbook"
+run = "ansible-playbook -i inventory/homelab.yaml playbooks/site.yml"
+
+[tasks."tsidp:syntax"]
+description = "Syntax-check the tsidp playbook"
+run = "ansible-playbook -i inventory/homelab.yaml playbooks/tsidp.yml --syntax-check"
+
+[tasks."tsidp:check"]
+description = "Run the tsidp playbook in check mode"
+run = "ansible-playbook -i inventory/homelab.yaml playbooks/tsidp.yml --check"
+
+[tasks."tsidp:apply"]
+description = "Apply the tsidp playbook"
+run = "ansible-playbook -i inventory/homelab.yaml playbooks/tsidp.yml"

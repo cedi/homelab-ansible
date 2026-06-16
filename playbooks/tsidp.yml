@@ -1,4 +1,4 @@
 ---
-- hosts: lyn
+- hosts: nuc
   roles:
     - role: tsidp

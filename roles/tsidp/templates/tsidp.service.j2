@@ -5,7 +5,19 @@ Description=Tailscale (OIDC) IDP
 TimeoutStartSec=0
 User=root
 EnvironmentFile=/etc/default/tsidp
-ExecStart=/root/go/bin/tsidp
+ExecStart={{ tsidp_binary_path }} \
+  -dir {{ tsidp_state_dir }} \
+  -hostname {{ tsidp_hostname }} \
+  -port {{ tsidp_port }} \
+  -log {{ tsidp_log }}{% if tsidp_local_port is not none %} \
+  -local-port {{ tsidp_local_port }}{% endif %}{% if tsidp_use_local_tailscaled | bool %} \
+  -use-local-tailscaled{% endif %}{% if tsidp_use_funnel | bool %} \
+  -funnel{% endif %}{% if tsidp_enable_sts | bool %} \
+  -enable-sts{% endif %}{% if tsidp_debug_tsnet | bool %} \
+  -debug-tsnet{% endif %}{% if tsidp_debug_all_requests | bool %} \
+  -debug-all-requests{% endif %}{% if tsidp_advertise_tags | length > 0 %} \
+  -advertise-tags {% for tag in tsidp_advertise_tags %}{% if tag.startswith('tag:') %}{{ tag }}{% else %}tag:{{ tag }}{% endif %}{% if not loop.last %},{% endif %}{% endfor %}{% endif %}
+
 Restart=on-failure
 TimeoutStopSec=20s
 SendSIGKILL=no

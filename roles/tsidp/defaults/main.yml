@@ -1,0 +1,18 @@
+---
+tsidp_version: latest
+tsidp_install_dir: /root/go/bin
+tsidp_binary_path: "{{ tsidp_install_dir }}/tsidp"
+tsidp_state_dir: /data
+tsidp_legacy_state_dir: /root/.config/tsnet-tsidp
+tsidp_migrate_legacy_state: true
+tsidp_hostname: idp
+tsidp_port: 443
+tsidp_local_port:
+tsidp_use_local_tailscaled: false
+tsidp_use_funnel: false
+tsidp_enable_sts: true
+tsidp_log: info
+tsidp_debug_tsnet: false
+tsidp_debug_all_requests: false
+tsidp_advertise_tags: []
+tsidp_authkey:
