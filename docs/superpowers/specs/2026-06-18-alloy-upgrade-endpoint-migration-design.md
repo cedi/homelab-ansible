@@ -1,7 +1,7 @@
 # Alloy Upgrade + Endpoint Migration — Design
 
 **Date:** 2026-06-18
-**Status:** Approved
+**Status:** Pending re-approval (scope expanded to fix OTLP metrics/logs routing)
 
 ## Goal
 
@@ -60,13 +60,58 @@ Full URLs/paths (all HTTPS):
    }
    ```
 
-### monitoring.yml (nuc) — receiver reference only
+### monitoring.yml (nuc) — fix OTLP receiver routing (metrics/logs failure)
 
-The `otelcol.receiver.otlp "default"` output block keeps forwarding
-`metrics`, `logs`, and `traces` (left as-is per decision), but the exporter
-component name changes, so the three references update from
-`otelcol.exporter.otlp.tempo.input` →
-`otelcol.exporter.otlphttp.tempo.input`.
+**Root cause (confirmed on the live host, alloy v1.8.1):** the
+`otelcol.receiver.otlp "default"` output block forwards `metrics`, `logs`, AND
+`traces` all into the single Tempo exporter. Tempo only ingests traces, and the
+old Tempo endpoint is now down — the journal shows a continuous stream of
+`otelcol.exporter.otlp.tempo` errors (`connection refused`, `sending queue is
+full`, `Dropping data`). Every OTLP-ingested metric and log is dropped along
+with the traces. The direct paths (`prometheus.scrape`→Mimir, file/journal→Loki)
+are healthy.
+
+Fix: add bridge exporters so each signal goes to its correct backend.
+
+```alloy
+otelcol.exporter.otlphttp "tempo" {
+  client {
+    endpoint = "https://homelab-tempo.k8s.specht-labs.de/otlp"
+  }
+}
+
+otelcol.exporter.prometheus "to_mimir" {
+  forward_to = [prometheus.remote_write.mimir.receiver]
+}
+
+otelcol.exporter.loki "to_loki" {
+  forward_to = [loki.write.grafana_loki.receiver]
+}
+
+otelcol.receiver.otlp "default" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+  output {
+    metrics = [otelcol.exporter.prometheus.to_mimir.input]
+    logs    = [otelcol.exporter.loki.to_loki.input]
+    traces  = [otelcol.exporter.otlphttp.tempo.input]
+  }
+}
+```
+
+This supersedes step 4's Tempo change for `monitoring.yml` (the `otelcol.exporter.otlphttp "tempo"` block above is the nuc form).
+
+### hole / jitsi — Tempo exporter
+
+`hole` and `jitsi` define an `otelcol.exporter.*` "tempo" but have **no**
+`otelcol.receiver.otlp`, so nothing feeds it (no OTLP ingestion on those hosts).
+Step 4 still applies: convert it to `otelcol.exporter.otlphttp "tempo"` pointed
+at `https://spechtlabs-tempo.k8s.specht-labs.de/otlp`. It remains an inert
+(unreferenced) component, matching the pre-existing structure.
 
 ### monitoring-hole.yml & monitoring-jitsi.yml — systemd override fix
 
