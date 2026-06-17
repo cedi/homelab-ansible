@@ -2,7 +2,9 @@
 collections:
   - name: community.general
   - name: ansible.posix
+  - name: ansible.utils
   - name: grafana.grafana
+    version: "6.1.0"
 
 roles:
   - name: geerlingguy.node_exporter

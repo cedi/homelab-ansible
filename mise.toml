@@ -2,6 +2,13 @@
 ansible-core = "2.20.6"
 uv = "0.11.19"
 
+[tasks."deps"]
+description = "Install Ansible galaxy roles/collections and controller Python deps"
+run = """
+ansible-galaxy install -r requirements.yml
+uv pip install --python "$(mise where ansible-core)/ansible-core/bin/python" -r requirements.txt
+"""
+
 [tasks."ansible:syntax"]
 description = "Syntax-check the full site playbook"
 run = "ansible-playbook -i inventory/homelab.yaml playbooks/site.yml --syntax-check"

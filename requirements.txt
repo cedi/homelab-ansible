@@ -1,0 +1,5 @@
+# Ansible controller-side Python dependencies.
+# Install via `mise run deps` (uses uv into the ansible-core venv).
+# netaddr is required by ansible.utils.ipaddr, used by the grafana.grafana.alloy
+# role preflight to validate the alloy server.http.listen-addr.
+netaddr==1.3.0

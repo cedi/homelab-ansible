@@ -3,7 +3,7 @@
   gather_facts: true
   become: true
   collections:
-    - grafana.grafana:5.7.0
+    - grafana.grafana:6.1.0
   roles:
     - role: geerlingguy.node_exporter
     - role: grafana.grafana.alloy
@@ -12,15 +12,13 @@
           - "systemd-journal"
           - "adm"
           - "sudo"
-        alloy_systemd_override:
-          alloy_systemd_override: |
-            [Service]
-            User=root
+        alloy_systemd_override: |
+          [Service]
+          User=root
         alloy_config: |
           loki.write "grafana_loki" {
             endpoint {
-              url       = "https://loki-gateway.sphinx-map.ts.net/loki/api/v1/push"
-              tenant_id = "cedi-dev"
+              url = "http://spechtlabs-loki.k8s.specht-labs.de/loki/api/v1/push"
             }
 
             external_labels = {
@@ -76,10 +74,7 @@
 
           prometheus.remote_write "mimir" {
             endpoint {
-              url = "https://mimir-nginx.sphinx-map.ts.net/api/v1/push"
-              headers = {
-                "X-Scope-OrgID" = "cedi-dev",
-              }
+              url = "http://spechtlabs-mimir.k8s.specht-labs.de/api/v1/push"
             }
           }
 
@@ -107,8 +102,8 @@
             forward_to = [prometheus.remote_write.mimir.receiver]
           }
 
-          otelcol.exporter.otlp "tempo" {
+          otelcol.exporter.otlphttp "tempo" {
             client {
-              endpoint = "tempo-distributor.sphinx-map.ts.net/otlp-http"
+              endpoint = "http://spechtlabs-tempo.k8s.specht-labs.de"
             }
           }
