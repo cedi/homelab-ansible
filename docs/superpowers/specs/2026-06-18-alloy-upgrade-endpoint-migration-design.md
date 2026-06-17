@@ -1,7 +1,17 @@
 # Alloy Upgrade + Endpoint Migration — Design
 
 **Date:** 2026-06-18
-**Status:** Pending re-approval (scope expanded to fix OTLP metrics/logs routing)
+**Status:** Implemented
+
+> **Correction discovered during deployment:** the new endpoints are served over
+> plain **HTTP on port 80** by the envoy `tailnet` Gateway (Tailscale/WireGuard
+> provides transport encryption). Its `:443` listener is TLS **Passthrough**
+> (TLSRoute-only), so `https://` reset at the TLS handshake. All endpoint URLs
+> below therefore use `http://`, not `https://`. Additionally, Tempo's OTLP/HTTP
+> receiver (the `tempo-distributor:4318` backend) serves `/v1/traces`, so the
+> `otelcol.exporter.otlphttp` endpoint is the bare host `http://<host>` (the
+> exporter appends `/v1/traces`) — no `/otlp` suffix. The implemented playbooks
+> reflect these corrections.
 
 ## Goal
 

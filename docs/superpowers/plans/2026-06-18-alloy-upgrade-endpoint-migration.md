@@ -8,6 +8,15 @@
 
 **Tech Stack:** Ansible (ansible-core 2.20.6 via mise), `grafana.grafana` collection 6.1.0, Grafana Alloy (river config), ansible-galaxy.
 
+> **Implementation corrections (discovered during deploy):**
+> 1. The new endpoints are HTTP on the envoy `tailnet` Gateway `:80` listener
+>    (tailnet-encrypted); `:443` is TLS-passthrough/TLSRoute-only. Use `http://`,
+>    not `https://`, for all Loki/Mimir/Tempo URLs.
+> 2. Tempo endpoint is the bare host `http://<host>` (otlphttp appends
+>    `/v1/traces`); the `/otlp` suffix returns 404.
+> 3. The 6.1.0 alloy role preflight needs the `ansible.utils` collection +
+>    `netaddr` Python lib — added an extra task (Task 0) for this.
+
 ## Global Constraints
 
 - Collection: `grafana.grafana` pinned to `6.1.0` (inline play pin AND `requirements.yml`).
