@@ -20,7 +20,7 @@
         alloy_config: |
           loki.write "grafana_loki" {
             endpoint {
-              url = "https://homelab-loki.k8s.specht-labs.de/loki/api/v1/push"
+              url = "http://homelab-loki.k8s.specht-labs.de/loki/api/v1/push"
             }
           }
 
@@ -68,7 +68,7 @@
 
           prometheus.remote_write "mimir" {
             endpoint {
-              url = "https://homelab-mimir.k8s.specht-labs.de/api/v1/push"
+              url = "http://homelab-mimir.k8s.specht-labs.de/api/v1/push"
             }
           }
 
@@ -180,7 +180,7 @@
 
           otelcol.exporter.otlphttp "tempo" {
             client {
-              endpoint = "https://homelab-tempo.k8s.specht-labs.de/otlp"
+              endpoint = "http://homelab-tempo.k8s.specht-labs.de"
             }
           }
 

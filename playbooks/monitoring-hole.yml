@@ -18,7 +18,7 @@
         alloy_config: |
           loki.write "grafana_loki" {
             endpoint {
-              url = "https://spechtlabs-loki.k8s.specht-labs.de/loki/api/v1/push"
+              url = "http://spechtlabs-loki.k8s.specht-labs.de/loki/api/v1/push"
             }
           }
 
@@ -70,7 +70,7 @@
 
           prometheus.remote_write "mimir" {
             endpoint {
-              url = "https://spechtlabs-mimir.k8s.specht-labs.de/api/v1/push"
+              url = "http://spechtlabs-mimir.k8s.specht-labs.de/api/v1/push"
             }
           }
 
@@ -100,6 +100,6 @@
 
           otelcol.exporter.otlphttp "tempo" {
             client {
-              endpoint = "https://spechtlabs-tempo.k8s.specht-labs.de/otlp"
+              endpoint = "http://spechtlabs-tempo.k8s.specht-labs.de"
             }
           }
