@@ -3,7 +3,7 @@
   gather_facts: true
   become: true
   collections:
-    - grafana.grafana:5.7.0
+    - grafana.grafana:6.1.0
   roles:
     - role: geerlingguy.node_exporter
     - role: grafana.grafana.alloy
@@ -20,8 +20,7 @@
         alloy_config: |
           loki.write "grafana_loki" {
             endpoint {
-              url       = "https://loki-gateway.sphinx-map.ts.net/loki/api/v1/push"
-              tenant_id = "homelab"
+              url = "https://homelab-loki.k8s.specht-labs.de/loki/api/v1/push"
             }
           }
 
@@ -69,10 +68,7 @@
 
           prometheus.remote_write "mimir" {
             endpoint {
-              url = "https://mimir-nginx.sphinx-map.ts.net/api/v1/push"
-              headers = {
-                "X-Scope-OrgID" = "homelab",
-              }
+              url = "https://homelab-mimir.k8s.specht-labs.de/api/v1/push"
             }
           }
 
@@ -182,10 +178,18 @@
             forward_to = [prometheus.remote_write.mimir.receiver]
           }
 
-          otelcol.exporter.otlp "tempo" {
+          otelcol.exporter.otlphttp "tempo" {
             client {
-              endpoint = "tempo-distributor.sphinx-map.ts.net/otlp-http"
+              endpoint = "https://homelab-tempo.k8s.specht-labs.de/otlp"
             }
+          }
+
+          otelcol.exporter.prometheus "to_mimir" {
+            forward_to = [prometheus.remote_write.mimir.receiver]
+          }
+
+          otelcol.exporter.loki "to_loki" {
+            forward_to = [loki.write.grafana_loki.receiver]
           }
 
           otelcol.receiver.otlp "default" {
@@ -196,8 +200,8 @@
               endpoint = "0.0.0.0:4318"
             }
             output {
-              metrics = [otelcol.exporter.otlp.tempo.input]
-              logs    = [otelcol.exporter.otlp.tempo.input]
-              traces  = [otelcol.exporter.otlp.tempo.input]
+              metrics = [otelcol.exporter.prometheus.to_mimir.input]
+              logs    = [otelcol.exporter.loki.to_loki.input]
+              traces  = [otelcol.exporter.otlphttp.tempo.input]
             }
           }
