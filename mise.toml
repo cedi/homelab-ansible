@@ -1,6 +1,6 @@
 [tools]
 ansible-core = "2.20.6"
-uv = "0.11.19"
+uv = "0.11.26"
 
 [tasks."deps"]
 description = "Install Ansible galaxy roles/collections and controller Python deps"
